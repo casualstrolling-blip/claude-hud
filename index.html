@@ -12,51 +12,201 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--cyan:#00e5ff;--purple:#b06bff;--cyan-dim:rgba(0,229,255,0.08);--purple-dim:rgba(176,107,255,0.08);--cyan-border:rgba(0,229,255,0.22);--purple-border:rgba(176,107,255,0.22);--cyan-glow:rgba(0,229,255,0.5);--purple-glow:rgba(176,107,255,0.5);}
-html,body{width:100%;height:100%;background:#020408;overflow:hidden;user-select:none;font-family:'Share Tech Mono',monospace;}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);}
-.hud{width:100vw;height:100vh;display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:1fr;padding:8px 14px;gap:6px;}
-.topbar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,229,255,0.08);padding-bottom:6px;}
-.tb-brand{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.24em;color:rgba(0,229,255,0.35);text-transform:uppercase;}
-.tb-mid{display:flex;align-items:center;gap:10px}.tb-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 2s ease-in-out infinite;flex-shrink:0;}
+:root{
+  --cyan:#00e5ff;
+  --purple:#b06bff;
+  --cyan-dim:rgba(0,229,255,0.08);
+  --purple-dim:rgba(176,107,255,0.08);
+  --cyan-border:rgba(0,229,255,0.22);
+  --purple-border:rgba(176,107,255,0.22);
+  --cyan-glow:rgba(0,229,255,0.5);
+  --purple-glow:rgba(176,107,255,0.5);
+}
+html,body{
+  width:100%;height:100%;
+  background:#020408;
+  overflow:hidden;user-select:none;
+  font-family:'Share Tech Mono',monospace;
+}
+/* scanlines */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);
+}
+
+/* ── LAYOUT ── */
+.hud{
+  width:100vw;height:100vh;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  grid-template-columns:1fr;
+  padding:8px 14px;
+  gap:6px;
+}
+
+/* ── TOP BAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(0,229,255,0.08);
+  padding-bottom:6px;
+}
+.tb-brand{
+  font-family:'Orbitron',sans-serif;
+  font-size:8px;font-weight:700;letter-spacing:0.24em;
+  color:rgba(0,229,255,0.35);text-transform:uppercase;
+}
+.tb-mid{display:flex;align-items:center;gap:10px}
+.tb-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--cyan);box-shadow:0 0 8px var(--cyan);
+  animation:pulse 2s ease-in-out infinite;flex-shrink:0;
+}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
-.tb-status{font-size:7px;letter-spacing:0.14em;color:rgba(0,229,255,0.25);text-transform:uppercase}.tb-clock{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.18em;color:rgba(0,229,255,0.4);font-variant-numeric:tabular-nums;}
-.panels{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:0;}
-.panel{position:relative;border:1px solid;border-radius:2px;padding:10px 14px 10px;display:grid;grid-template-rows:auto auto 1fr auto auto auto;gap:4px;overflow:hidden;}
-.panel-s{border-color:var(--cyan-border);background:var(--cyan-dim)}.panel-w{border-color:var(--purple-border);background:var(--purple-dim)}
-.panel::before,.panel::after{content:'';position:absolute;width:10px;height:10px;border-style:solid;border-color:inherit;}
-.panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px}.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
-.panel-s .glow{position:absolute;bottom:-40px;left:-40px;width:180px;height:180px;pointer-events:none;background:radial-gradient(circle,rgba(0,229,255,0.07) 0%,transparent 70%);}
-.panel-w .glow{position:absolute;bottom:-40px;right:-40px;width:180px;height:180px;pointer-events:none;background:radial-gradient(circle,rgba(176,107,255,0.07) 0%,transparent 70%);}
-.panel-sig{font-family:'Orbitron',sans-serif;font-size:6px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;}
-.panel-s .panel-sig{color:rgba(0,229,255,0.3)}.panel-w .panel-sig{color:rgba(176,107,255,0.3)}
-.panel-name{font-size:7px;letter-spacing:0.16em;text-transform:uppercase;}
-.panel-s .panel-name{color:rgba(0,229,255,0.4)}.panel-w .panel-name{color:rgba(176,107,255,0.4)}
-.num-row{display:flex;align-items:flex-end;gap:4px;align-self:center;}
-.big{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(52px,10vw,80px);line-height:1;letter-spacing:-0.02em;}
-.panel-s .big{color:var(--cyan);text-shadow:0 0 24px var(--cyan-glow),0 0 60px rgba(0,229,255,0.15);}
-.panel-w .big{color:var(--purple);text-shadow:0 0 24px var(--purple-glow),0 0 60px rgba(176,107,255,0.15);}
-.pct-sym{font-family:'Orbitron',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px;}
-.panel-s .pct-sym{color:rgba(0,229,255,0.45)}.panel-w .pct-sym{color:rgba(176,107,255,0.45)}
-.prog-wrap{display:flex;flex-direction:column;gap:3px}.prog-label-row{display:flex;justify-content:space-between;align-items:center}
+.tb-status{font-size:7px;letter-spacing:0.14em;color:rgba(0,229,255,0.25);text-transform:uppercase}
+.tb-clock{
+  font-family:'Orbitron',sans-serif;
+  font-size:9px;font-weight:700;letter-spacing:0.18em;
+  color:rgba(0,229,255,0.4);font-variant-numeric:tabular-nums;
+}
+
+/* ── MAIN: two panels side by side ── */
+.panels{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  min-height:0;
+}
+
+.panel{
+  position:relative;
+  border:1px solid;
+  border-radius:2px;
+  padding:10px 14px 10px;
+  display:grid;
+  grid-template-rows:auto auto 1fr auto auto auto;
+  gap:4px;
+  overflow:hidden;
+}
+.panel-s{border-color:var(--cyan-border);background:var(--cyan-dim)}
+.panel-w{border-color:var(--purple-border);background:var(--purple-dim)}
+
+/* corner brackets */
+.panel::before,.panel::after{
+  content:'';position:absolute;
+  width:10px;height:10px;
+  border-style:solid;border-color:inherit;
+}
+.panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+
+/* ambient glow */
+.panel-s .glow{
+  position:absolute;bottom:-40px;left:-40px;
+  width:180px;height:180px;pointer-events:none;
+  background:radial-gradient(circle,rgba(0,229,255,0.07) 0%,transparent 70%);
+}
+.panel-w .glow{
+  position:absolute;bottom:-40px;right:-40px;
+  width:180px;height:180px;pointer-events:none;
+  background:radial-gradient(circle,rgba(176,107,255,0.07) 0%,transparent 70%);
+}
+
+.panel-sig{
+  font-family:'Orbitron',sans-serif;
+  font-size:6px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;
+}
+.panel-s .panel-sig{color:rgba(0,229,255,0.3)}
+.panel-w .panel-sig{color:rgba(176,107,255,0.3)}
+
+.panel-name{
+  font-size:7px;letter-spacing:0.16em;text-transform:uppercase;
+}
+.panel-s .panel-name{color:rgba(0,229,255,0.4)}
+.panel-w .panel-name{color:rgba(176,107,255,0.4)}
+
+/* BIG % */
+.num-row{
+  display:flex;align-items:flex-end;gap:4px;
+  align-self:center;
+}
+.big{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(52px,10vw,80px);
+  line-height:1;letter-spacing:-0.02em;
+}
+.panel-s .big{
+  color:var(--cyan);
+  text-shadow:0 0 24px var(--cyan-glow),0 0 60px rgba(0,229,255,0.15);
+}
+.panel-w .big{
+  color:var(--purple);
+  text-shadow:0 0 24px var(--purple-glow),0 0 60px rgba(176,107,255,0.15);
+}
+.pct-sym{
+  font-family:'Orbitron',sans-serif;font-weight:700;
+  font-size:16px;margin-bottom:8px;
+}
+.panel-s .pct-sym{color:rgba(0,229,255,0.45)}
+.panel-w .pct-sym{color:rgba(176,107,255,0.45)}
+
+/* PROGRESS BAR */
+.prog-wrap{display:flex;flex-direction:column;gap:3px}
+.prog-label-row{display:flex;justify-content:space-between;align-items:center}
 .prog-label{font-size:6px;letter-spacing:0.14em;text-transform:uppercase}
-.panel-s .prog-label{color:rgba(0,229,255,0.25)}.panel-w .prog-label{color:rgba(176,107,255,0.25)}
+.panel-s .prog-label{color:rgba(0,229,255,0.25)}
+.panel-w .prog-label{color:rgba(176,107,255,0.25)}
 .prog-pct-txt{font-size:6px;letter-spacing:0.1em}
-.panel-s .prog-pct-txt{color:rgba(0,229,255,0.4)}.panel-w .prog-pct-txt{color:rgba(176,107,255,0.4)}
-.prog-track{height:8px;border-radius:1px;position:relative;overflow:hidden;}
-.panel-s .prog-track{background:rgba(0,229,255,0.07)}.panel-w .prog-track{background:rgba(176,107,255,0.07)}
-.prog-fill{height:100%;border-radius:1px;transition:width 0.6s cubic-bezier(.4,0,.2,1);position:relative;}
-.panel-s .prog-fill{background:linear-gradient(90deg,rgba(0,180,220,0.7),var(--cyan));box-shadow:0 0 10px rgba(0,229,255,0.6);}
-.panel-w .prog-fill{background:linear-gradient(90deg,rgba(130,60,220,0.7),var(--purple));box-shadow:0 0 10px rgba(176,107,255,0.6);}
-.prog-ticks{display:flex;justify-content:space-between;padding:2px 0 0;}
+.panel-s .prog-pct-txt{color:rgba(0,229,255,0.4)}
+.panel-w .prog-pct-txt{color:rgba(176,107,255,0.4)}
+
+.prog-track{
+  height:8px;border-radius:1px;
+  position:relative;overflow:hidden;
+}
+.panel-s .prog-track{background:rgba(0,229,255,0.07)}
+.panel-w .prog-track{background:rgba(176,107,255,0.07)}
+
+.prog-fill{
+  height:100%;border-radius:1px;
+  transition:width 0.6s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.panel-s .prog-fill{
+  background:linear-gradient(90deg,rgba(0,180,220,0.7),var(--cyan));
+  box-shadow:0 0 10px rgba(0,229,255,0.6);
+}
+.panel-w .prog-fill{
+  background:linear-gradient(90deg,rgba(130,60,220,0.7),var(--purple));
+  box-shadow:0 0 10px rgba(176,107,255,0.6);
+}
+.prog-ticks{
+  display:flex;justify-content:space-between;
+  padding:2px 0 0;
+}
 .prog-tick{font-size:5px;letter-spacing:0.04em}
-.panel-s .prog-tick{color:rgba(0,229,255,0.15)}.panel-w .prog-tick{color:rgba(176,107,255,0.15)}
-.segs{display:flex;gap:2px;margin-top:2px}.seg{height:2px;flex:1;border-radius:1px}
-.data-rows{display:flex;flex-direction:column;gap:2px}.data-row{display:flex;justify-content:space-between;align-items:center}
-.d-label{font-size:6px;letter-spacing:0.14em;text-transform:uppercase}.d-val{font-size:7px;letter-spacing:0.08em}
-.panel-s .d-label{color:rgba(0,229,255,0.2)}.panel-s .d-val{color:rgba(0,229,255,0.55)}
-.panel-w .d-label{color:rgba(176,107,255,0.2)}.panel-w .d-val{color:rgba(176,107,255,0.55)}
-.btmbar{display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(0,229,255,0.08);padding-top:5px;}
+.panel-s .prog-tick{color:rgba(0,229,255,0.15)}
+.panel-w .prog-tick{color:rgba(176,107,255,0.15)}
+
+/* SEGMENTED BAR */
+.segs{display:flex;gap:2px;margin-top:2px}
+.seg{height:2px;flex:1;border-radius:1px}
+
+/* DATA ROWS */
+.data-rows{display:flex;flex-direction:column;gap:2px}
+.data-row{display:flex;justify-content:space-between;align-items:center}
+.d-label{font-size:6px;letter-spacing:0.14em;text-transform:uppercase}
+.d-val{font-size:7px;letter-spacing:0.08em}
+.panel-s .d-label{color:rgba(0,229,255,0.2)}
+.panel-s .d-val{color:rgba(0,229,255,0.55)}
+.panel-w .d-label{color:rgba(176,107,255,0.2)}
+.panel-w .d-val{color:rgba(176,107,255,0.55)}
+
+/* ── BOTTOM BAR ── */
+.btmbar{
+  display:flex;align-items:center;justify-content:space-between;
+  border-top:1px solid rgba(0,229,255,0.08);
+  padding-top:5px;
+}
 .btm-txt{font-size:6px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,229,255,0.12)}
 .btm-date{font-size:7px;letter-spacing:0.1em;color:rgba(0,229,255,0.2)}
 .btm-sync{font-size:6px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,229,255,0.2)}
@@ -64,58 +214,232 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;b
 </head>
 <body>
 <div class="hud">
+
+  <!-- TOP BAR -->
   <div class="topbar">
     <span class="tb-brand">Claude · Neural HUD</span>
-    <div class="tb-mid"><div class="tb-dot"></div><span class="tb-status">uplink nominal · anthropic cloud</span></div>
+    <div class="tb-mid">
+      <div class="tb-dot"></div>
+      <span class="tb-status">uplink nominal · anthropic cloud</span>
+    </div>
     <span class="tb-clock" id="clock">00:00:00</span>
   </div>
+
+  <!-- PANELS -->
   <div class="panels">
+
+    <!-- SESSION -->
     <div class="panel panel-s">
-      <div class="glow"></div><div class="panel-sig">SIG-01</div><div class="panel-name">Current Session</div>
-      <div class="num-row"><div class="big" id="s-num">--</div><div class="pct-sym">%</div></div>
-      <div class="prog-wrap">
-        <div class="prog-label-row"><span class="prog-label">session load</span><span class="prog-pct-txt" id="s-pct-txt">-- / 100%</span></div>
-        <div class="prog-track"><div class="prog-fill" id="s-fill" style="width:0%"></div></div>
-        <div class="prog-ticks"><span class="prog-tick">0</span><span class="prog-tick">25</span><span class="prog-tick">50</span><span class="prog-tick">75</span><span class="prog-tick">100</span></div>
+      <div class="glow"></div>
+      <div class="panel-sig">SIG-01</div>
+      <div class="panel-name">Current Session</div>
+
+      <div class="num-row">
+        <div class="big" id="s-num">--</div>
+        <div class="pct-sym">%</div>
       </div>
+
+      <div class="prog-wrap">
+        <div class="prog-label-row">
+          <span class="prog-label">session load</span>
+          <span class="prog-pct-txt" id="s-pct-txt">-- / 100%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" id="s-fill" style="width:0%"></div>
+        </div>
+        <div class="prog-ticks">
+          <span class="prog-tick">0</span>
+          <span class="prog-tick">25</span>
+          <span class="prog-tick">50</span>
+          <span class="prog-tick">75</span>
+          <span class="prog-tick">100</span>
+        </div>
+      </div>
+
       <div class="segs" id="s-segs"></div>
+
       <div class="data-rows">
-        <div class="data-row"><span class="d-label">Status</span><span class="d-val" id="s-status">ACQUIRING</span></div>
-        <div class="data-row"><span class="d-label">Resets in</span><span class="d-val" id="s-reset">—</span></div>
+        <div class="data-row">
+          <span class="d-label">Status</span>
+          <span class="d-val" id="s-status">ACQUIRING</span>
+        </div>
+        <div class="data-row">
+          <span class="d-label">Resets in</span>
+          <span class="d-val" id="s-reset">—</span>
+        </div>
       </div>
     </div>
+
+    <!-- WEEKLY -->
     <div class="panel panel-w">
-      <div class="glow"></div><div class="panel-sig">SIG-02</div><div class="panel-name">Weekly Usage</div>
-      <div class="num-row"><div class="big" id="w-num">--</div><div class="pct-sym">%</div></div>
-      <div class="prog-wrap">
-        <div class="prog-label-row"><span class="prog-label">weekly load</span><span class="prog-pct-txt" id="w-pct-txt">-- / 100%</span></div>
-        <div class="prog-track"><div class="prog-fill" id="w-fill" style="width:0%"></div></div>
-        <div class="prog-ticks"><span class="prog-tick">0</span><span class="prog-tick">25</span><span class="prog-tick">50</span><span class="prog-tick">75</span><span class="prog-tick">100</span></div>
+      <div class="glow"></div>
+      <div class="panel-sig">SIG-02</div>
+      <div class="panel-name">Weekly Usage</div>
+
+      <div class="num-row">
+        <div class="big" id="w-num">--</div>
+        <div class="pct-sym">%</div>
       </div>
+
+      <div class="prog-wrap">
+        <div class="prog-label-row">
+          <span class="prog-label">weekly load</span>
+          <span class="prog-pct-txt" id="w-pct-txt">-- / 100%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" id="w-fill" style="width:0%"></div>
+        </div>
+        <div class="prog-ticks">
+          <span class="prog-tick">0</span>
+          <span class="prog-tick">25</span>
+          <span class="prog-tick">50</span>
+          <span class="prog-tick">75</span>
+          <span class="prog-tick">100</span>
+        </div>
+      </div>
+
       <div class="segs" id="w-segs"></div>
+
       <div class="data-rows">
-        <div class="data-row"><span class="d-label">Status</span><span class="d-val" id="w-status">ACQUIRING</span></div>
-        <div class="data-row"><span class="d-label">Resets</span><span class="d-val" id="w-reset">—</span></div>
+        <div class="data-row">
+          <span class="d-label">Status</span>
+          <span class="d-val" id="w-status">ACQUIRING</span>
+        </div>
+        <div class="data-row">
+          <span class="d-label">Resets</span>
+          <span class="d-val" id="w-reset">—</span>
+        </div>
       </div>
     </div>
+
   </div>
+
+  <!-- BOTTOM BAR -->
   <div class="btmbar">
     <span class="btm-txt">claude command center · hud v3.0</span>
     <span class="btm-date" id="date-str">—</span>
     <span class="btm-sync" id="sync-time">syncing...</span>
   </div>
+
 </div>
+
 <script>
-var PROXY_URL="/api/usage";
-var S={sp:0,sr:'',wp:0,wr:''};
-var lastSync=null;
-function pad(n){return n<10?'0'+n:''+n;}
-function statusLabel(p){if(p===0)return'STANDBY';if(p<25)return'LOW';if(p<50)return'NOMINAL';if(p<75)return'ELEVATED';if(p<90)return'HIGH';if(p<100)return'CRITICAL';return'MAXED';}
-function buildSegs(id,pct,isCyan){var el=document.getElementById(id);var n=24,filled=Math.round(pct/100*n),html='';for(var i=0;i<n;i++){var lit=i<filled;var opacity=lit?(0.35+i/n*0.65):0.07;var c=isCyan?'0,229,255':'176,107,255';html+='<div class="seg" style="background:rgba('+c+','+opacity+')"></div>';}el.innerHTML=html;}
-function formatReset(e){if(!e)return'—';var d=new Date(parseFloat(e)*1000);var now=new Date();var diff=d-now;if(diff<=0)return'soon';var h=Math.floor(diff/3600000);var m=Math.floor((diff%3600000)/60000);if(h>=24)return Math.floor(h/24)+'d '+(h%24)+'h';return h+'h '+m+'m';}
-function render(){var sp=Math.min(Math.max(S.sp||0,0),100);var wp=Math.min(Math.max(S.wp||0,0),100);document.getElementById('s-num').textContent=lastSync?sp:'--';document.getElementById('s-fill').style.width=sp+'%';document.getElementById('s-pct-txt').textContent=sp+'% used';document.getElementById('s-status').textContent=lastSync?statusLabel(sp):'ACQUIRING';document.getElementById('s-reset').textContent=S.sr||'—';buildSegs('s-segs',sp,true);document.getElementById('w-num').textContent=lastSync?wp:'--';document.getElementById('w-fill').style.width=wp+'%';document.getElementById('w-pct-txt').textContent=wp+'% used';document.getElementById('w-status').textContent=lastSync?statusLabel(wp):'ACQUIRING';document.getElementById('w-reset').textContent=S.wr||'—';buildSegs('w-segs',wp,false);var now=new Date();document.getElementById('clock').textContent=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];document.getElementById('date-str').textContent=days[now.getDay()]+' '+now.getDate()+' '+mo[now.getMonth()]+' '+now.getFullYear();if(lastSync){document.getElementById('sync-time').textContent='synced '+pad(lastSync.getHours())+':'+pad(lastSync.getMinutes())+':'+pad(lastSync.getSeconds());}}
-async function fetchUsage(){try{var resp=await fetch(PROXY_URL);var data=await resp.json();S.sp=Math.round(parseFloat(data.sessionUtilization||0)*100);S.wp=Math.round(parseFloat(data.weeklyUtilization||0)*100);S.sr=formatReset(data.sessionReset);S.wr=formatReset(data.weeklyReset);lastSync=new Date();render();}catch(e){console.error('fetch failed:',e);}}
-fetchUsage();setInterval(fetchUsage,60000);setInterval(render,1000);
+var PROXY_URL = "/api/usage";
+
+var S = { sp: 0, sr: '', wp: 0, wr: '' };
+var lastSync = null;
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function statusLabel(p) {
+  if (p === 0)   return 'STANDBY';
+  if (p < 25)    return 'LOW';
+  if (p < 50)    return 'NOMINAL';
+  if (p < 75)    return 'ELEVATED';
+  if (p < 90)    return 'HIGH';
+  if (p < 100)   return 'CRITICAL';
+  return 'MAXED';
+}
+
+function buildSegs(id, pct, isCyan) {
+  var el = document.getElementById(id);
+  var n = 24, filled = Math.round(pct / 100 * n), html = '';
+  for (var i = 0; i < n; i++) {
+    var lit = i < filled;
+    var opacity = lit ? (0.35 + i / n * 0.65) : 0.07;
+    var c = isCyan ? '0,229,255' : '176,107,255';
+    html += '<div class="seg" style="background:rgba(' + c + ',' + opacity + ')"></div>';
+  }
+  el.innerHTML = html;
+}
+
+function formatReset(epochSeconds) {
+  if (!epochSeconds) return '—';
+  var d = new Date(parseFloat(epochSeconds) * 1000);
+  var now = new Date();
+  var diffMs = d - now;
+  if (diffMs <= 0) return 'soon';
+  var h = Math.floor(diffMs / 3600000);
+  var m = Math.floor((diffMs % 3600000) / 60000);
+  if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+  return h + 'h ' + m + 'm';
+}
+
+function render() {
+  var sp = Math.min(Math.max(S.sp || 0, 0), 100);
+  var wp = Math.min(Math.max(S.wp || 0, 0), 100);
+
+  document.getElementById('s-num').textContent = lastSync ? sp : '--';
+  document.getElementById('s-fill').style.width = sp + '%';
+  document.getElementById('s-pct-txt').textContent = sp + '% used';
+  document.getElementById('s-status').textContent = lastSync ? statusLabel(sp) : 'ACQUIRING';
+  document.getElementById('s-reset').textContent = S.sr || '—';
+  buildSegs('s-segs', sp, true);
+
+  document.getElementById('w-num').textContent = lastSync ? wp : '--';
+  document.getElementById('w-fill').style.width = wp + '%';
+  document.getElementById('w-pct-txt').textContent = wp + '% used';
+  document.getElementById('w-status').textContent = lastSync ? statusLabel(wp) : 'ACQUIRING';
+  document.getElementById('w-reset').textContent = S.wr || '—';
+  buildSegs('w-segs', wp, false);
+
+  // Clock
+  var now = new Date();
+  document.getElementById('clock').textContent =
+    pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+
+  // Date
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('date-str').textContent =
+    days[now.getDay()] + ' ' + now.getDate() + ' ' + mo[now.getMonth()] + ' ' + now.getFullYear();
+
+  // Sync time
+  if (lastSync) {
+    document.getElementById('sync-time').textContent =
+      'synced ' + pad(lastSync.getHours()) + ':' + pad(lastSync.getMinutes()) + ':' + pad(lastSync.getSeconds());
+  }
+}
+
+async function fetchUsage() {
+  try {
+    var resp = await fetch(PROXY_URL);
+    var data = await resp.json();
+    S.sp = Math.round(parseFloat(data.sessionUtilization || 0) * 100);
+    S.wp = Math.round(parseFloat(data.weeklyUtilization  || 0) * 100);
+    S.sr = formatReset(data.sessionReset);
+    S.wr = formatReset(data.weeklyReset);
+    lastSync = new Date();
+    render();
+  } catch (e) {
+    console.error('Usage fetch failed:', e);
+  }
+}
+
+// ── SMART POLLING ──────────────────────────────────────────────────────────
+// Screen ON  → poll every 60 seconds
+// Screen OFF → poll every 10 minutes, fetch immediately on wake
+var ACTIVE_MS = 60000;
+var IDLE_MS   = 600000;
+var pollTimer = null;
+
+function startPolling(ms) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(fetchUsage, ms);
+}
+
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) {
+    startPolling(IDLE_MS);
+  } else {
+    fetchUsage();
+    startPolling(ACTIVE_MS);
+  }
+});
+
+fetchUsage();
+startPolling(ACTIVE_MS);
+setInterval(render, 1000);
 </script>
 </body>
 </html>
