@@ -133,24 +133,6 @@ html,body{ width:100%;height:100%;background:#000;overflow:hidden;user-select:no
 .btm-txt{ font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(0,229,255,0.15); }
 .btm-date{ font-size:11px;color:rgba(0,229,255,0.35); }
 .btm-sync{ font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(0,229,255,0.3); }
-
-/* DEMO BAR */
-.demo-bar{ position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;flex-wrap:wrap;justify-content:center;z-index:9999;background:rgba(0,0,0,0.95);padding:8px 12px;border-radius:4px;border:1px solid rgba(255,255,255,0.07);backdrop-filter:blur(8px);max-width:96vw; }
-.demo-row{ display:flex;gap:5px;justify-content:center; }
-.dbtn{ font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.08em;text-transform:uppercase;padding:5px 9px;border-radius:2px;cursor:pointer;border:1px solid;background:transparent;transition:background 0.15s; }
-.dbtn:disabled{ opacity:0.22;cursor:default; }
-.dbtn.amber{ color:var(--amber); border-color:rgba(255,183,0,0.4); }
-.dbtn.amber:not(:disabled):hover{ background:rgba(255,183,0,0.08); }
-.dbtn.green{ color:var(--green); border-color:rgba(0,255,136,0.4); }
-.dbtn.green:not(:disabled):hover{ background:rgba(0,255,136,0.08); }
-.dbtn.cyan { color:var(--cyan);  border-color:rgba(0,229,255,0.3); }
-.dbtn.cyan:hover{ background:rgba(0,229,255,0.06); }
-.dbtn.red  { color:var(--red);   border-color:rgba(255,51,85,0.4); }
-.dbtn.red:hover{ background:rgba(255,51,85,0.07); }
-.dbtn.orange{ color:var(--orange);border-color:rgba(255,119,0,0.4); }
-.dbtn.orange:hover{ background:rgba(255,119,0,0.07); }
-.demo-sep{ width:1px;background:rgba(255,255,255,0.08);margin:0 2px;align-self:stretch; }
-.demo-lbl{ font-family:'Share Tech Mono',monospace;font-size:7px;color:rgba(255,255,255,0.2);align-self:center;letter-spacing:0.08em;text-transform:uppercase;padding:0 4px; }
 </style>
 </head>
 <body>
@@ -255,34 +237,24 @@ html,body{ width:100%;height:100%;background:#000;overflow:hidden;user-select:no
   </div>
 
   <div class="btmbar">
-    <span class="btm-txt">claude command center · hud v5.0</span>
+    <span class="btm-txt">claude command center · hud v5.1</span>
     <span class="btm-date" id="date-str">—</span>
     <span class="btm-sync" id="sync-time">synced —</span>
   </div>
 </div>
 
-<!-- DEMO CONTROLS -->
-<div class="demo-bar">
-  <div class="demo-row">
-    <span class="demo-lbl">cowork</span>
-    <button class="dbtn amber"  id="btn-start">▶ Start</button>
-    <button class="dbtn cyan"   id="btn-approval" disabled>⏸ Approval</button>
-    <button class="dbtn orange" id="btn-idle"     disabled>⚡ Idle</button>
-    <button class="dbtn green"  id="btn-done"     disabled>✓ Done</button>
-    <button class="dbtn cyan"   id="btn-auto">⟳ Auto</button>
-    <div class="demo-sep"></div>
-    <span class="demo-lbl">usage</span>
-    <button class="dbtn red"  id="btn-full">⚠ 100%</button>
-    <button class="dbtn green" id="btn-rdy">✦ Reset</button>
-  </div>
-  <div class="demo-row">
-    <span class="demo-lbl">sounds</span>
-    <button class="dbtn red"    id="btn-s1">🔔 School Bell</button>
-    <button class="dbtn green"  id="btn-s2">✦ Complete</button>
-    <button class="dbtn orange" id="btn-s3">⚡ Idle Warn</button>
-    <button class="dbtn cyan"   id="btn-s4">⏸ Approval</button>
-  </div>
-</div>
+<!-- hidden wiring for event listeners -->
+<button id="btn-start"    style="display:none"></button>
+<button id="btn-approval" style="display:none"></button>
+<button id="btn-idle"     style="display:none"></button>
+<button id="btn-done"     style="display:none"></button>
+<button id="btn-auto"     style="display:none"></button>
+<button id="btn-full"     style="display:none"></button>
+<button id="btn-rdy"      style="display:none"></button>
+<button id="btn-s1"       style="display:none"></button>
+<button id="btn-s2"       style="display:none"></button>
+<button id="btn-s3"       style="display:none"></button>
+<button id="btn-s4"       style="display:none"></button>
 
 <script>
 const S = {
@@ -624,10 +596,6 @@ function transitionToCoWork(taskName){
             S.mode='cowork'; S.busy=false; S.taskStart=Date.now();
             document.getElementById('cw-cursor').style.display='inline-block';
             startElapsed(); startIdleTimer();
-            document.getElementById('btn-done').disabled=false;
-            document.getElementById('btn-approval').disabled=false;
-            document.getElementById('btn-idle').disabled=false;
-            document.getElementById('btn-start').disabled=true;
           }
         });
         gsap.from(cowork.querySelectorAll(':scope > *:not(.cw-complete-flash)'),{opacity:0,y:7,duration:0.4,stagger:0.06,ease:'power2.out',delay:0.2});
@@ -667,10 +635,6 @@ function transitionToWeekly(){
             document.getElementById('tb-dot').className='tb-dot';
             document.getElementById('tb-status').textContent='uplink nominal · anthropic cloud';
             S.mode='weekly'; S.busy=false;
-            document.getElementById('btn-start').disabled=false;
-            document.getElementById('btn-done').disabled=true;
-            document.getElementById('btn-approval').disabled=true;
-            document.getElementById('btn-idle').disabled=true;
           }
         });
         gsap.from(weekly.querySelectorAll(':scope > *'),{opacity:0,y:-7,duration:0.4,stagger:0.06,ease:'power2.out',delay:0.2});
@@ -702,7 +666,13 @@ let pollTimer = null;
 
 function formatReset(isoStr) {
   if (!isoStr) return '—';
-  const diff = new Date(isoStr) - Date.now();
+  let target = new Date(isoStr);
+  if (isNaN(target.getTime())) {
+    const n = Number(isoStr);
+    if (!isNaN(n)) target = new Date(n * 1000);
+  }
+  if (isNaN(target.getTime())) return '—';
+  const diff = target - Date.now();
   if (diff <= 0) return '0m';
   const totalSec = Math.floor(diff / 1000);
   const d = Math.floor(totalSec / 86400);
@@ -774,49 +744,10 @@ function tick(){
 }
 setInterval(tick,1000); tick();
 
-function runAutoDemo(){
-  if(S.autoRunning){
-    S.autoRunning=false;
-    document.getElementById('btn-auto').textContent='⟳ Auto';
-    clearTimeout(S.autoTimer); return;
-  }
-  S.autoRunning=true;
-  document.getElementById('btn-auto').textContent='■ Stop';
-  function cycle(){
-    if(!S.autoRunning) return;
-    transitionToCoWork(DEMO_TASK);
-    let t=1800;
-    DEMO_STEPS.forEach((step,i)=>{ S.autoTimer=setTimeout(()=>{if(S.autoRunning)pushStep(step,i+1,DEMO_STEPS.length);},t); t+=1800; });
-    S.autoTimer=setTimeout(()=>{if(S.autoRunning)transitionToWeekly();},t);
-    S.autoTimer=setTimeout(()=>{if(S.autoRunning)cycle();},t+4000);
-  }
-  cycle();
-}
-
-document.getElementById('btn-start').addEventListener('click',()=>{
-  transitionToCoWork(DEMO_TASK);
-  let t=1500;
-  DEMO_STEPS.forEach((step,i)=>{ setTimeout(()=>pushStep(step,i+1,DEMO_STEPS.length),t); t+=1800; });
-});
+// wire up hidden buttons (kept for programmatic CoWork API use)
+document.getElementById('btn-start').addEventListener('click',()=>transitionToCoWork(DEMO_TASK));
 document.getElementById('btn-done').addEventListener('click', transitionToWeekly);
 document.getElementById('btn-approval').addEventListener('click', setApprovalState);
-document.getElementById('btn-idle').addEventListener('click', ()=>{
-  clearTimeout(S.idleTimer);
-  if(S.mode==='cowork'){
-    document.getElementById('cw-dot').className='cw-dot idle';
-    const lbl=document.getElementById('cw-status-lbl');
-    lbl.textContent='IDLE'; lbl.className='cw-status-lbl idle';
-    document.getElementById('cowork-panel').classList.add('idle-warn');
-    document.getElementById('cw-step-label').textContent='Last Known Step';
-    document.getElementById('tb-dot').className='tb-dot alert-amber';
-    document.getElementById('tb-status').textContent='cowork · no activity detected';
-    document.getElementById('cw-wave').innerHTML='';
-    playIdleWarning();
-  }
-});
-document.getElementById('btn-auto').addEventListener('click', runAutoDemo);
-document.getElementById('btn-full').addEventListener('click', simFull);
-document.getElementById('btn-rdy').addEventListener('click', simReady);
 document.getElementById('btn-s1').addEventListener('click', playSchoolBell);
 document.getElementById('btn-s2').addEventListener('click', playCompleteChime);
 document.getElementById('btn-s3').addEventListener('click', playIdleWarning);
@@ -828,9 +759,6 @@ window.addEventListener('load',()=>{
   document.getElementById('weekly-panel').style.pointerEvents='auto';
   document.getElementById('cowork-panel').style.opacity='0';
   document.getElementById('cowork-panel').style.pointerEvents='none';
-  document.getElementById('btn-done').disabled=true;
-  document.getElementById('btn-approval').disabled=true;
-  document.getElementById('btn-idle').disabled=true;
   document.addEventListener('click',()=>{ if(S.audioCtx&&S.audioCtx.state==='suspended') S.audioCtx.resume(); },{once:true});
   fetchUsage();
   startPolling(POLL_SCREEN_ON_MS);
