@@ -256,7 +256,7 @@ html,body{ width:100%;height:100%;background:#000;overflow:hidden;user-select:no
   </div>
 
   <div class="btmbar">
-    <span class="btm-txt">claude command center · hud v5.4</span>
+    <span class="btm-txt">claude command center · hud v5.5</span>
     <span class="btm-date" id="date-str">—</span>
     <span class="btm-sync" id="sync-time">synced —</span>
   </div>
@@ -289,6 +289,7 @@ const S = {
 const POLL_SCREEN_ON_MS  = 30000;       // 30s whenever screen is on
 const POLL_SCREEN_OFF_MS = 3600000;     // 1h when screen is off
 const IDLE_WARN_MS       = 300000;      // 5min idle before CoWork warning
+const STALE_TASK_MS      = 600000;      // 10min — if running with no update, auto-idle
 
 const DEMO_TASK = 'Quarterly business review deck';
 const DEMO_STEPS = [
@@ -965,8 +966,15 @@ async function fetchTaskState() {
 }
 
 function applyTaskState(state) {
-  const status = (state && state.status) ? state.status : 'idle';
-  const prev   = lastTaskStatus;
+  let status = (state && state.status) ? state.status : 'idle';
+  const prev  = lastTaskStatus;
+
+  // Staleness guard: if running but no update in 10min, auto-idle
+  if (status === 'running' && state.updated_at) {
+    const age = Date.now() - new Date(state.updated_at).getTime();
+    if (age > STALE_TASK_MS) status = 'idle';
+  }
+
   lastTaskStatus = status;
 
   if (status === 'idle') {
