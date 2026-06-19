@@ -1,0 +1,27 @@
+export const config = { runtime: 'edge' };
+
+const SB_URL  = 'https://gtyqozhccwfywkmvkeyz.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0eXFvemhjY3dmeXdrbXZrZXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MzAxNTEsImV4cCI6MjA5NjQwNjE1MX0.uRGSv_A8OWDCfFtrQbcDzXosUNn7asWHAZ0BKmCcJWw';
+const HEADERS = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+const CORS    = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+
+export default async function handler(request) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST', 'Access-Control-Allow-Headers': 'Content-Type' } });
+  }
+
+  if (request.method === 'POST') {
+    const body = await request.json();
+    const r = await fetch(`${SB_URL}/rest/v1/hud_task_state?id=eq.1`, {
+      method: 'PATCH',
+      headers: { ...HEADERS, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ ...body, updated_at: new Date().toISOString() })
+    });
+    return new Response(JSON.stringify({ ok: r.ok, status: r.status }), { headers: CORS });
+  }
+
+  // GET - return current state
+  const r = await fetch(`${SB_URL}/rest/v1/hud_task_state?id=eq.1&select=*`, { headers: HEADERS });
+  const data = await r.json();
+  return new Response(JSON.stringify(data[0] || { status: 'idle' }), { headers: CORS });
+}
