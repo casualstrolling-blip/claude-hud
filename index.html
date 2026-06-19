@@ -282,12 +282,13 @@ const S = {
   elapsedTimer:null, idleTimer:null,
   autoRunning:false, autoTimer:null,
   sFull:false, wFull:false,
-  audioCtx:null
+  audioCtx:null,
+  sessionActive:false  // true only after user taps to begin tracking
 };
 
-const POLL_ACTIVE_MS = 30000;           // 30s while CoWork session is running
-const POLL_IDLE_MS   = 300000;          // 5min when screen on but no active task
-const IDLE_WARN_MS   = 300000;          // 5min idle before CoWork warning
+const POLL_SCREEN_ON_MS  = 30000;       // 30s whenever screen is on
+const POLL_SCREEN_OFF_MS = 3600000;     // 1h when screen is off
+const IDLE_WARN_MS       = 300000;      // 5min idle before CoWork warning
 
 const DEMO_TASK = 'Quarterly business review deck';
 const DEMO_STEPS = [
@@ -643,7 +644,6 @@ function transitionToCoWork(taskName){
             S.mode='cowork'; S.busy=false; S.taskStart=Date.now();
             document.getElementById('cw-cursor').style.display='inline-block';
             startElapsed(); startIdleTimer();
-            if (!S.sFull) { fetchUsage(); startPolling(POLL_ACTIVE_MS); }
             document.getElementById('btn-done').disabled=false;
             document.getElementById('btn-approval').disabled=false;
             document.getElementById('btn-idle').disabled=false;
@@ -690,7 +690,6 @@ function transitionToWeekly(){
             document.getElementById('tb-dot').className='tb-dot';
             document.getElementById('tb-status').textContent='uplink nominal · anthropic cloud';
             S.mode='weekly'; S.busy=false;
-            if (!S.sFull) startPolling(POLL_IDLE_MS);
             document.getElementById('btn-start').disabled=false;
             document.getElementById('btn-done').disabled=true;
             document.getElementById('btn-approval').disabled=true;
@@ -725,19 +724,16 @@ function stopElapsed(){ clearInterval(S.elapsedTimer); S.elapsedTimer=null; }
 // ── LIVE FETCH ──
 let pollTimer          = null;
 let resetCountdownTimer = null;
-
-function parseResetMs(isoStr) {
-  if (!isoStr) return null;
-  let t = new Date(isoStr);
-  if (isNaN(t.getTime())) { const n = Number(isoStr); if (!isNaN(n)) t = new Date(n * 1000); }
-  return isNaN(t.getTime()) ? null : t.getTime();
-}
+let fetchRetryTimer    = null;
+let retryCount         = 0;
+const RETRY_DELAYS     = [5000, 10000]; // retry after 5s, then 10s, then wait for next interval
 
 function formatReset(isoStr) {
   if (!isoStr) return '—';
-  const ms = parseResetMs(isoStr);
-  if (!ms) return '—';
-  const diff = ms - Date.now();
+  let t = new Date(isoStr);
+  if (isNaN(t.getTime())) { const n = Number(isoStr); if (!isNaN(n)) t = new Date(n * 1000); }
+  if (isNaN(t.getTime())) return '—';
+  const diff = t.getTime() - Date.now();
   if (diff <= 0) return '0m';
   const totalSec = Math.floor(diff / 1000);
   const d = Math.floor(totalSec / 86400);
@@ -748,19 +744,18 @@ function formatReset(isoStr) {
   return m + 'm';
 }
 
-// Local countdown — zero API calls, fires once per minute
-function startLocalCountdown(panel, resetAtMs) {
+// Local countdown — only used after 100% to track reset time without any API calls
+function startLocalCountdown(resetAtMs) {
   clearInterval(resetCountdownTimer);
-  const resetEl = document.getElementById(panel === 'session' ? 's-reset' : 'w-reset');
+  const resetEl = document.getElementById('s-reset');
   function tick() {
     const diff = resetAtMs - Date.now();
     if (diff <= 0) {
       clearInterval(resetCountdownTimer);
       resetCountdownTimer = null;
-      const wasF = panel === 'session' ? S.sFull : S.wFull;
-      if (panel === 'session') S.sFull = false; else S.wFull = false;
-      updatePanel(panel, 0, '—', false, true);
-      if (wasF) triggerReadyAlert(panel);
+      S.sFull = false;
+      showReadyState();
+      triggerReadyAlert('session');
       return;
     }
     const totalSec = Math.floor(diff / 1000);
@@ -772,17 +767,42 @@ function startLocalCountdown(panel, resetAtMs) {
   resetCountdownTimer = setInterval(tick, 60000);
 }
 
+// Show READY state — zero Anthropic calls, waiting for user tap
+function showReadyState() {
+  S.sessionActive = false;
+  clearInterval(pollTimer);      pollTimer = null;
+  clearTimeout(fetchRetryTimer); fetchRetryTimer = null;
+  retryCount = 0;
+  const bigEl  = document.getElementById('s-big');
+  const symEl  = document.getElementById('s-sym');
+  const statEl = document.getElementById('s-status');
+  const fillEl = document.getElementById('s-fill');
+  const pctEl  = document.getElementById('s-pct');
+  bigEl.textContent = 'READY';
+  bigEl.classList.remove('full'); bigEl.classList.add('ready');
+  symEl.style.display  = 'none';
+  fillEl.style.width   = '0%';  fillEl.classList.remove('full');
+  pctEl.textContent    = '—';
+  statEl.textContent   = 'TAP TO TRACK';
+  statEl.classList.remove('crit'); statEl.classList.add('rdy');
+  document.getElementById('s-reset').textContent = '—';
+  document.getElementById('tb-dot').className = 'tb-dot';
+  if (S.mode === 'weekly')
+    document.getElementById('tb-status').textContent = 'session ready · tap panel to begin';
+}
+
 async function fetchUsage() {
+  if (!S.sessionActive) return;
   try {
     const r = await fetch('/api/usage', { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
+    retryCount = 0; // reset backoff on success
 
     const sRaw = parseFloat(d.sessionUtilization) || 0;
     const wRaw = parseFloat(d.weeklyUtilization) || 0;
     const sPct = Math.round(sRaw * 100);
     const wPct = Math.round(wRaw * 100);
-
     const wasSFull = S.sFull;
     const wasWFull = S.wFull;
     S.sFull = sPct >= 100;
@@ -791,16 +811,17 @@ async function fetchUsage() {
     // Session panel
     if (S.sFull) {
       updatePanel('session', 100, formatReset(d.sessionReset), true, false);
-      if (!wasSFull) triggerFullAlert('session');
-      // Switch to local countdown — stop all API polling
-      const sResetMs = parseResetMs(d.sessionReset);
-      if (sResetMs && sResetMs > Date.now()) {
+      if (!wasSFull) {
+        triggerFullAlert('session');
+        // Stop all Anthropic polling; use stored reset_at for local countdown
         clearInterval(pollTimer); pollTimer = null;
-        startLocalCountdown('session', sResetMs);
+        S.sessionActive = false;
+        const resetMs = new Date(d.sessionReset).getTime();
+        if (resetMs && resetMs > Date.now()) startLocalCountdown(resetMs);
+        else showReadyState(); // fallback: no valid reset_at
       }
     } else {
-      updatePanel('session', sPct, formatReset(d.sessionReset), false, !S.sFull && wasSFull);
-      if (!S.sFull && wasSFull) triggerReadyAlert('session');
+      updatePanel('session', sPct, formatReset(d.sessionReset), false, false);
     }
 
     // Weekly panel
@@ -818,6 +839,11 @@ async function fetchUsage() {
   } catch(e) {
     document.getElementById('tb-dot').className = 'tb-dot alert-amber';
     document.getElementById('tb-status').textContent = 'fetch error · retrying…';
+    // Backoff retry: 5s → 10s → wait for next scheduled interval
+    if (retryCount < RETRY_DELAYS.length) {
+      clearTimeout(fetchRetryTimer);
+      fetchRetryTimer = setTimeout(() => { retryCount++; fetchUsage(); }, RETRY_DELAYS[retryCount]);
+    }
   }
 }
 
@@ -826,16 +852,31 @@ function startPolling(ms) {
   pollTimer = setInterval(fetchUsage, ms);
 }
 
-// Screen on: resume idle polling (1h); if CoWork is active, keep active rate
-function screenOn() {
-  if (S.sFull) return; // counting down locally — don't restart API polling
+// User taps session panel → explicit signal that they've started a Claude session
+function startTracking() {
+  if (S.sessionActive || S.sFull) return;
+  S.sessionActive = true;
+  retryCount = 0;
+  document.getElementById('s-big').textContent = '—';
+  document.getElementById('s-big').classList.remove('ready', 'full');
+  document.getElementById('s-sym').style.display = '';
+  document.getElementById('s-status').textContent = 'SYNCING';
+  document.getElementById('s-status').classList.remove('rdy', 'crit');
+  document.getElementById('tb-dot').className = 'tb-dot alert-cyan';
+  document.getElementById('tb-status').textContent = 'connecting · anthropic cloud';
   fetchUsage();
-  startPolling(S.mode === 'cowork' ? POLL_ACTIVE_MS : POLL_IDLE_MS);
+  startPolling(POLL_SCREEN_ON_MS);
 }
-// Screen off: stop polling entirely — no wasted API calls
+
+// Screen on/off — only adjust polling rate if actively tracking
+function screenOn() {
+  if (!S.sessionActive) return;
+  fetchUsage();
+  startPolling(POLL_SCREEN_ON_MS);
+}
 function screenOff() {
-  clearInterval(pollTimer);
-  pollTimer = null;
+  if (!S.sessionActive) return;
+  startPolling(POLL_SCREEN_OFF_MS);
 }
 
 // Fully Kiosk API (reliable on physical screen toggle)
@@ -976,10 +1017,13 @@ window.addEventListener('load',()=>{
   document.getElementById('btn-approval').disabled=true;
   document.getElementById('btn-idle').disabled=true;
   document.addEventListener('click',()=>{ if(S.audioCtx&&S.audioCtx.state==='suspended') S.audioCtx.resume(); },{once:true});
-  // Usage: one fetch on load, then idle polling (1h); CoWork transitions override the rate
-  fetchUsage();
-  startPolling(POLL_IDLE_MS);
-  // CoWork task state polling (every 5s)
+  // Session panel tap → user signals they've started a Claude session
+  document.querySelector('.panel-s').addEventListener('click', () => {
+    if (!S.sessionActive && !S.sFull) startTracking();
+  });
+  // Start in READY state — zero Anthropic calls until user taps
+  showReadyState();
+  // CoWork task state polling (every 5s — our own Supabase, safe)
   fetchTaskState();
   setInterval(fetchTaskState, 5000);
 });
