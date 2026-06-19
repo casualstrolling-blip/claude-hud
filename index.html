@@ -256,7 +256,7 @@ html,body{ width:100%;height:100%;background:#000;overflow:hidden;user-select:no
   </div>
 
   <div class="btmbar">
-    <span class="btm-txt">claude command center · hud v5.5</span>
+    <span class="btm-txt">claude command center · hud v5.6</span>
     <span class="btm-date" id="date-str">—</span>
     <span class="btm-sync" id="sync-time">synced —</span>
   </div>
@@ -370,6 +370,64 @@ function playIdleWarning() {
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
     o.start(t); o.stop(t + 0.55);
   });
+}
+
+// ❺ STARTUP CHIME — CoWork session beginning (futuristic time-machine power-up)
+// Low rumble sweeps up through mid harmonics, then a shimmer cascade and climax ping — ~2s total
+function playStartupSound() {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+
+  // Bass power-up: low sawtooth sweeps from rumble to roar
+  const bass = ctx.createOscillator();
+  const bassG = ctx.createGain();
+  bass.connect(bassG); bassG.connect(ctx.destination);
+  bass.type = 'sawtooth';
+  bass.frequency.setValueAtTime(40, t);
+  bass.frequency.exponentialRampToValueAtTime(300, t + 1.4);
+  bassG.gain.setValueAtTime(0, t);
+  bassG.gain.linearRampToValueAtTime(0.16, t + 0.07);
+  bassG.gain.setValueAtTime(0.16, t + 0.9);
+  bassG.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+  bass.start(t); bass.stop(t + 1.7);
+
+  // Mid harmonic: triangle sweeps up behind the bass
+  const mid = ctx.createOscillator();
+  const midG = ctx.createGain();
+  mid.connect(midG); midG.connect(ctx.destination);
+  mid.type = 'triangle';
+  mid.frequency.setValueAtTime(200, t + 0.18);
+  mid.frequency.exponentialRampToValueAtTime(1600, t + 1.35);
+  midG.gain.setValueAtTime(0, t + 0.18);
+  midG.gain.linearRampToValueAtTime(0.11, t + 0.3);
+  midG.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+  mid.start(t + 0.18); mid.stop(t + 1.7);
+
+  // Shimmer cascade: 5 quick ascending high pings at peak
+  for (let i = 0; i < 5; i++) {
+    const s = ctx.createOscillator();
+    const sg = ctx.createGain();
+    s.connect(sg); sg.connect(ctx.destination);
+    s.type = 'sine';
+    s.frequency.value = 2400 + i * 500;
+    const st = t + 1.1 + i * 0.07;
+    sg.gain.setValueAtTime(0, st);
+    sg.gain.linearRampToValueAtTime(0.09, st + 0.02);
+    sg.gain.exponentialRampToValueAtTime(0.001, st + 0.13);
+    s.start(st); s.stop(st + 0.15);
+  }
+
+  // Climax ping: bright sine sweep up — "engaged"
+  const ping = ctx.createOscillator();
+  const pingG = ctx.createGain();
+  ping.connect(pingG); pingG.connect(ctx.destination);
+  ping.type = 'sine';
+  ping.frequency.setValueAtTime(900, t + 1.35);
+  ping.frequency.exponentialRampToValueAtTime(2800, t + 1.85);
+  pingG.gain.setValueAtTime(0, t + 1.35);
+  pingG.gain.linearRampToValueAtTime(0.26, t + 1.42);
+  pingG.gain.exponentialRampToValueAtTime(0.001, t + 1.95);
+  ping.start(t + 1.35); ping.stop(t + 2.0);
 }
 
 // ❹ APPROVAL PING — Pending approval needed (attention/neutral)
@@ -613,6 +671,7 @@ function buildWave(){
 function transitionToCoWork(taskName){
   if(S.busy||S.mode==='cowork') return;
   S.busy=true;
+  playStartupSound();
   const weekly=document.getElementById('weekly-panel');
   const cowork=document.getElementById('cowork-panel');
   document.getElementById('tb-status').textContent='cowork session · incoming signal';
