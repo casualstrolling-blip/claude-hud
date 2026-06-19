@@ -3,443 +3,838 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#020408">
-<title>Claude · HUD</title>
+<title>Claude · Neural HUD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-  --cyan:#00e5ff;
-  --purple:#b06bff;
-  --cyan-dim:rgba(0,229,255,0.08);
-  --purple-dim:rgba(176,107,255,0.08);
-  --cyan-border:rgba(0,229,255,0.22);
-  --purple-border:rgba(176,107,255,0.22);
-  --cyan-glow:rgba(0,229,255,0.5);
-  --purple-glow:rgba(176,107,255,0.5);
+  --cyan:#00e5ff;   --cyan-b:rgba(0,229,255,0.3);   --cyan-g:rgba(0,229,255,0.7);
+  --purple:#b06bff; --purple-b:rgba(176,107,255,0.3); --purple-g:rgba(176,107,255,0.7);
+  --amber:#ffb700;  --amber-b:rgba(255,183,0,0.35);  --amber-g:rgba(255,183,0,0.7);
+  --green:#00ff88;  --red:#ff3355; --orange:#ff7700;
 }
-html,body{
-  width:100%;height:100%;
-  background:#020408;
-  overflow:hidden;user-select:none;
-  font-family:'Share Tech Mono',monospace;
-}
-/* scanlines */
-body::after{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px);
-}
+html,body{ width:100%;height:100%;background:#000;overflow:hidden;user-select:none;font-family:'Share Tech Mono',monospace;color:#fff; }
 
-/* ── LAYOUT ── */
-.hud{
-  width:100vw;height:100vh;
-  display:grid;
-  grid-template-rows:auto 1fr auto;
-  grid-template-columns:1fr;
-  padding:8px 14px;
-  gap:6px;
-}
+.hud{ width:100vw;height:100vh;display:grid;grid-template-rows:auto 1fr auto;padding:10px 16px;gap:8px; }
 
-/* ── TOP BAR ── */
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid rgba(0,229,255,0.08);
-  padding-bottom:6px;
-}
-.tb-brand{
-  font-family:'Orbitron',sans-serif;
-  font-size:8px;font-weight:700;letter-spacing:0.24em;
-  color:rgba(0,229,255,0.35);text-transform:uppercase;
-}
-.tb-mid{display:flex;align-items:center;gap:10px}
-.tb-dot{
-  width:5px;height:5px;border-radius:50%;
-  background:var(--cyan);box-shadow:0 0 8px var(--cyan);
-  animation:pulse 2s ease-in-out infinite;flex-shrink:0;
-}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
-.tb-status{font-size:7px;letter-spacing:0.14em;color:rgba(0,229,255,0.25);text-transform:uppercase}
-.tb-clock{
-  font-family:'Orbitron',sans-serif;
-  font-size:9px;font-weight:700;letter-spacing:0.18em;
-  color:rgba(0,229,255,0.4);font-variant-numeric:tabular-nums;
-}
+/* TOP BAR */
+.topbar{ display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,229,255,0.12);padding-bottom:7px; }
+.tb-brand{ font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(0,229,255,0.5); }
+.tb-mid{ display:flex;align-items:center;gap:10px; }
+.tb-dot{ width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan),0 0 24px rgba(0,229,255,0.35);animation:blink 2s ease-in-out infinite;flex-shrink:0; }
+.tb-dot.alert-red  { background:var(--red);   box-shadow:0 0 14px var(--red),  0 0 30px rgba(255,51,85,0.5); animation:blink 0.3s ease-in-out infinite; }
+.tb-dot.alert-amber{ background:var(--orange);box-shadow:0 0 14px var(--orange),0 0 30px rgba(255,119,0,0.5); animation:blink 0.8s ease-in-out infinite; }
+.tb-dot.alert-cyan { background:var(--cyan);  box-shadow:0 0 14px var(--cyan), 0 0 30px rgba(0,229,255,0.5); animation:blink 0.6s ease-in-out infinite; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.1}}
+.tb-status{ font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(0,229,255,0.35);transition:color 0.4s; }
+.tb-clock{ font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.14em;color:rgba(0,229,255,0.6);font-variant-numeric:tabular-nums; }
 
-/* ── MAIN: two panels side by side ── */
-.panels{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  min-height:0;
-}
+/* PANELS */
+.panels{ display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:0; }
+.panel{ position:relative;border:1px solid;border-radius:3px;padding:12px 16px;overflow:hidden;display:flex;flex-direction:column;gap:8px;background:#000; }
+.panel::before,.panel::after{ content:'';position:absolute;width:14px;height:14px;border-style:solid;border-color:inherit; }
+.panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
 
-.panel{
-  position:relative;
-  border:1px solid;
-  border-radius:2px;
-  padding:10px 14px 10px;
-  display:grid;
-  grid-template-rows:auto auto 1fr auto auto auto;
-  gap:4px;
-  overflow:hidden;
-}
-.panel-s{border-color:var(--cyan-border);background:var(--cyan-dim)}
-.panel-w{border-color:var(--purple-border);background:var(--purple-dim)}
+/* SESSION (cyan) */
+.panel-s{ border-color:var(--cyan-b); }
+.panel-s .p-name{ font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(0,229,255,0.5); }
+.panel-s .big{ font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(60px,12vw,92px);line-height:1;letter-spacing:-0.02em;color:var(--cyan);text-shadow:0 0 30px var(--cyan-g),0 0 80px rgba(0,229,255,0.18);transition:color .4s,text-shadow .4s; }
+.panel-s .big.full { color:var(--red);   text-shadow:0 0 30px rgba(255,51,85,.9), 0 0 80px rgba(255,51,85,.3); animation:fullpulse 1s ease-in-out infinite; }
+.panel-s .big.ready{ color:var(--green); text-shadow:0 0 30px rgba(0,255,136,.9),0 0 80px rgba(0,255,136,.3); }
+.panel-s .pct-sym{ font-family:'Orbitron',sans-serif;font-weight:700;font-size:22px;margin-bottom:10px;color:rgba(0,229,255,0.5);transition:color .4s; }
+.panel-s .p-bar-label{ font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(0,229,255,0.3); }
+.panel-s .p-bar-pct{ font-size:12px;color:rgba(0,229,255,0.6); }
+.panel-s .prog-track{ background:rgba(0,229,255,0.07); }
+.panel-s .prog-fill{ background:linear-gradient(90deg,rgba(0,180,220,.7),var(--cyan));box-shadow:0 0 12px rgba(0,229,255,.6);transition:background .4s,box-shadow .4s; }
+.panel-s .prog-fill.full{ background:linear-gradient(90deg,rgba(200,0,40,.7),var(--red));box-shadow:0 0 14px rgba(255,51,85,.7); }
+.panel-s .stat-label{ font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,229,255,0.25); }
+.panel-s .stat-val{ font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:rgba(0,229,255,0.9);transition:color .4s; }
+.panel-s .stat-val.crit{ color:var(--red);  text-shadow:0 0 12px rgba(255,51,85,.6); }
+.panel-s .stat-val.rdy { color:var(--green);text-shadow:0 0 12px rgba(0,255,136,.6); }
+.panel-s .reset-label{ font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,229,255,0.3); }
+.panel-s .reset-val{ font-family:'Orbitron',sans-serif;font-size:36px;font-weight:700;letter-spacing:0.04em;color:var(--cyan);text-shadow:0 0 22px var(--cyan-g),0 0 55px rgba(0,229,255,0.25); }
+@keyframes fullpulse{0%,100%{opacity:1}50%{opacity:0.5}}
 
-/* corner brackets */
-.panel::before,.panel::after{
-  content:'';position:absolute;
-  width:10px;height:10px;
-  border-style:solid;border-color:inherit;
-}
-.panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
-.panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+/* RIGHT WRAPPER */
+#right-wrapper{ position:relative;height:100%; }
 
-/* ambient glow */
-.panel-s .glow{
-  position:absolute;bottom:-40px;left:-40px;
-  width:180px;height:180px;pointer-events:none;
-  background:radial-gradient(circle,rgba(0,229,255,0.07) 0%,transparent 70%);
-}
-.panel-w .glow{
-  position:absolute;bottom:-40px;right:-40px;
-  width:180px;height:180px;pointer-events:none;
-  background:radial-gradient(circle,rgba(176,107,255,0.07) 0%,transparent 70%);
-}
+/* WEEKLY (purple) */
+#weekly-panel{ border-color:var(--purple-b);background:#000;position:absolute;inset:0;display:flex;flex-direction:column;gap:8px;padding:12px 16px; }
+#weekly-panel::before,#weekly-panel::after{ border-color:var(--purple-b); }
+#weekly-panel .p-name{ font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(176,107,255,0.5); }
+#weekly-panel .big{ font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(60px,12vw,92px);line-height:1;letter-spacing:-0.02em;color:var(--purple);text-shadow:0 0 30px var(--purple-g),0 0 80px rgba(176,107,255,0.18);transition:color .4s,text-shadow .4s; }
+#weekly-panel .big.full { color:var(--red);   text-shadow:0 0 30px rgba(255,51,85,.9), 0 0 80px rgba(255,51,85,.3); animation:fullpulse 1s ease-in-out infinite; }
+#weekly-panel .big.ready{ color:var(--green); text-shadow:0 0 30px rgba(0,255,136,.9),0 0 80px rgba(0,255,136,.3); }
+#weekly-panel .pct-sym{ font-family:'Orbitron',sans-serif;font-weight:700;font-size:22px;margin-bottom:10px;color:rgba(176,107,255,0.5); }
+#weekly-panel .p-bar-label{ font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(176,107,255,0.3); }
+#weekly-panel .p-bar-pct{ font-size:12px;color:rgba(176,107,255,0.6); }
+#weekly-panel .prog-track{ background:rgba(176,107,255,0.07); }
+#weekly-panel .prog-fill{ background:linear-gradient(90deg,rgba(120,50,210,.7),var(--purple));box-shadow:0 0 12px rgba(176,107,255,.6);transition:background .4s,box-shadow .4s; }
+#weekly-panel .prog-fill.full{ background:linear-gradient(90deg,rgba(200,0,40,.7),var(--red));box-shadow:0 0 14px rgba(255,51,85,.7); }
+#weekly-panel .stat-label{ font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(176,107,255,0.25); }
+#weekly-panel .stat-val{ font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:rgba(176,107,255,0.9);transition:color .4s; }
+#weekly-panel .stat-val.crit{ color:var(--red);  text-shadow:0 0 12px rgba(255,51,85,.6); }
+#weekly-panel .stat-val.rdy { color:var(--green);text-shadow:0 0 12px rgba(0,255,136,.6); }
+#weekly-panel .reset-label{ font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(176,107,255,0.3); }
+#weekly-panel .reset-val{ font-family:'Orbitron',sans-serif;font-size:36px;font-weight:700;letter-spacing:0.04em;color:var(--purple);text-shadow:0 0 22px var(--purple-g),0 0 55px rgba(176,107,255,0.25); }
 
-.panel-sig{
-  font-family:'Orbitron',sans-serif;
-  font-size:6px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;
-}
-.panel-s .panel-sig{color:rgba(0,229,255,0.3)}
-.panel-w .panel-sig{color:rgba(176,107,255,0.3)}
+/* SHARED */
+.num-row{ display:flex;align-items:flex-end;gap:5px; }
+.prog-wrap{ display:flex;flex-direction:column;gap:4px; }
+.p-bar-row{ display:flex;justify-content:space-between;align-items:center; }
+.prog-track{ height:9px;border-radius:2px;overflow:hidden; }
+.prog-fill{ height:100%;border-radius:2px;transition:width 0.7s cubic-bezier(.4,0,.2,1); }
+.stat-row{ display:flex;justify-content:space-between;align-items:flex-end; }
+.reset-block{ display:flex;flex-direction:column;gap:2px; }
 
-.panel-name{
-  font-size:7px;letter-spacing:0.16em;text-transform:uppercase;
-}
-.panel-s .panel-name{color:rgba(0,229,255,0.4)}
-.panel-w .panel-name{color:rgba(176,107,255,0.4)}
+/* COWORK (amber/dynamic) */
+#cowork-panel{ border-color:var(--amber-b);background:#000;position:absolute;inset:0;display:flex;flex-direction:column;gap:0;padding:12px 16px;opacity:0;pointer-events:none; }
+#cowork-panel::before,#cowork-panel::after{ border-color:var(--amber-b); }
+#cowork-panel.approval{ border-color:rgba(0,229,255,0.35); }
+#cowork-panel.approval::before,#cowork-panel.approval::after{ border-color:rgba(0,229,255,0.35); }
+#cowork-panel.idle-warn{ border-color:rgba(255,119,0,0.4); }
+#cowork-panel.idle-warn::before,#cowork-panel.idle-warn::after{ border-color:rgba(255,119,0,0.4); }
 
-/* BIG % */
-.num-row{
-  display:flex;align-items:flex-end;gap:4px;
-  align-self:center;
-}
-.big{
-  font-family:'Orbitron',sans-serif;font-weight:900;
-  font-size:clamp(52px,10vw,80px);
-  line-height:1;letter-spacing:-0.02em;
-}
-.panel-s .big{
-  color:var(--cyan);
-  text-shadow:0 0 24px var(--cyan-glow),0 0 60px rgba(0,229,255,0.15);
-}
-.panel-w .big{
-  color:var(--purple);
-  text-shadow:0 0 24px var(--purple-glow),0 0 60px rgba(176,107,255,0.15);
-}
-.pct-sym{
-  font-family:'Orbitron',sans-serif;font-weight:700;
-  font-size:16px;margin-bottom:8px;
-}
-.panel-s .pct-sym{color:rgba(0,229,255,0.45)}
-.panel-w .pct-sym{color:rgba(176,107,255,0.45)}
+.cw-name{ font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,183,0,0.5);margin-bottom:8px; }
+.cw-status-row{ display:flex;align-items:center;gap:10px;margin-bottom:10px; }
+.cw-dot{ width:10px;height:10px;border-radius:50%;background:var(--amber);box-shadow:0 0 14px var(--amber);animation:blink 0.9s ease-in-out infinite;flex-shrink:0; }
+.cw-dot.done  { background:var(--green); box-shadow:0 0 14px var(--green); animation:none; }
+.cw-dot.wait  { background:var(--cyan);  box-shadow:0 0 14px var(--cyan);  animation:blink 0.6s ease-in-out infinite; }
+.cw-dot.idle  { background:var(--orange);box-shadow:0 0 14px var(--orange);animation:blink 0.8s ease-in-out infinite; }
+.cw-status-lbl{ font-family:'Orbitron',sans-serif;font-size:26px;font-weight:700;letter-spacing:0.18em;color:var(--amber);transition:color 0.3s;text-shadow:0 0 20px rgba(255,183,0,0.6); }
+.cw-status-lbl.done { color:var(--green); text-shadow:0 0 20px rgba(0,255,136,0.6); }
+.cw-status-lbl.wait { color:var(--cyan);  text-shadow:0 0 20px rgba(0,229,255,0.6); }
+.cw-status-lbl.idle { color:var(--orange);text-shadow:0 0 20px rgba(255,119,0,0.6); }
+.cw-wave{ display:flex;align-items:flex-end;gap:3px;height:22px;margin-left:auto; }
+.cw-bar{ width:3px;border-radius:1px;background:var(--amber);opacity:0.55;animation:wave 0.8s ease-in-out infinite alternate; }
+@keyframes wave{0%{height:3px;opacity:0.2}100%{height:18px;opacity:0.8}}
+.cw-task-label{ font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,183,0,0.3);margin-bottom:4px; }
+.cw-task-name{ font-size:20px;letter-spacing:0.04em;color:rgba(255,183,0,0.92);border-left:3px solid rgba(255,183,0,0.45);padding-left:10px;margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.cw-div{ height:1px;background:rgba(255,183,0,0.1);margin-bottom:10px; }
+.cw-step-label{ font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,183,0,0.3);margin-bottom:6px; }
+.cw-step-text{ font-size:20px;letter-spacing:0.03em;color:rgba(255,183,0,0.94);line-height:1.45;flex:1; }
+.cw-cursor{ display:inline-block;width:10px;height:20px;background:var(--amber);opacity:0.85;margin-left:3px;vertical-align:text-bottom;animation:cur 0.7s step-end infinite; }
+@keyframes cur{0%,100%{opacity:0.85}50%{opacity:0}}
+.cw-foot{ display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:8px;border-top:1px solid rgba(255,183,0,0.08); }
+.cw-elapsed{ font-size:14px;letter-spacing:0.08em;color:rgba(255,183,0,0.45); }
+.cw-stepcnt{ font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:rgba(255,183,0,0.5); }
+.cw-complete-flash{ position:absolute;inset:0;background:rgba(0,255,136,0);pointer-events:none;z-index:10;border-radius:3px; }
 
-/* PROGRESS BAR */
-.prog-wrap{display:flex;flex-direction:column;gap:3px}
-.prog-label-row{display:flex;justify-content:space-between;align-items:center}
-.prog-label{font-size:6px;letter-spacing:0.14em;text-transform:uppercase}
-.panel-s .prog-label{color:rgba(0,229,255,0.25)}
-.panel-w .prog-label{color:rgba(176,107,255,0.25)}
-.prog-pct-txt{font-size:6px;letter-spacing:0.1em}
-.panel-s .prog-pct-txt{color:rgba(0,229,255,0.4)}
-.panel-w .prog-pct-txt{color:rgba(176,107,255,0.4)}
+/* OVERLAYS */
+#alert-overlay{ position:fixed;inset:0;pointer-events:none;z-index:8000;background:rgba(255,51,85,0); }
+#scan-canvas{ position:absolute;inset:0;pointer-events:none;z-index:100;display:none; }
+#border-svg{ position:absolute;inset:0;pointer-events:none;z-index:99;display:none;overflow:visible; }
 
-.prog-track{
-  height:8px;border-radius:1px;
-  position:relative;overflow:hidden;
-}
-.panel-s .prog-track{background:rgba(0,229,255,0.07)}
-.panel-w .prog-track{background:rgba(176,107,255,0.07)}
+/* BOTTOM BAR */
+.btmbar{ display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(0,229,255,0.07);padding-top:6px; }
+.btm-txt{ font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(0,229,255,0.15); }
+.btm-date{ font-size:11px;color:rgba(0,229,255,0.35); }
+.btm-sync{ font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(0,229,255,0.3); }
 
-.prog-fill{
-  height:100%;border-radius:1px;
-  transition:width 0.6s cubic-bezier(.4,0,.2,1);
-  position:relative;
-}
-.panel-s .prog-fill{
-  background:linear-gradient(90deg,rgba(0,180,220,0.7),var(--cyan));
-  box-shadow:0 0 10px rgba(0,229,255,0.6);
-}
-.panel-w .prog-fill{
-  background:linear-gradient(90deg,rgba(130,60,220,0.7),var(--purple));
-  box-shadow:0 0 10px rgba(176,107,255,0.6);
-}
-.prog-ticks{
-  display:flex;justify-content:space-between;
-  padding:2px 0 0;
-}
-.prog-tick{font-size:5px;letter-spacing:0.04em}
-.panel-s .prog-tick{color:rgba(0,229,255,0.15)}
-.panel-w .prog-tick{color:rgba(176,107,255,0.15)}
-
-/* SEGMENTED BAR */
-.segs{display:flex;gap:2px;margin-top:2px}
-.seg{height:2px;flex:1;border-radius:1px}
-
-/* DATA ROWS */
-.data-rows{display:flex;flex-direction:column;gap:2px}
-.data-row{display:flex;justify-content:space-between;align-items:center}
-.d-label{font-size:6px;letter-spacing:0.14em;text-transform:uppercase}
-.d-val{font-size:7px;letter-spacing:0.08em}
-.panel-s .d-label{color:rgba(0,229,255,0.2)}
-.panel-s .d-val{color:rgba(0,229,255,0.55)}
-.panel-w .d-label{color:rgba(176,107,255,0.2)}
-.panel-w .d-val{color:rgba(176,107,255,0.55)}
-
-/* ── BOTTOM BAR ── */
-.btmbar{
-  display:flex;align-items:center;justify-content:space-between;
-  border-top:1px solid rgba(0,229,255,0.08);
-  padding-top:5px;
-}
-.btm-txt{font-size:6px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,229,255,0.12)}
-.btm-date{font-size:7px;letter-spacing:0.1em;color:rgba(0,229,255,0.2)}
-.btm-sync{font-size:6px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,229,255,0.2)}
+/* DEMO BAR */
+.demo-bar{ position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;flex-wrap:wrap;justify-content:center;z-index:9999;background:rgba(0,0,0,0.95);padding:8px 12px;border-radius:4px;border:1px solid rgba(255,255,255,0.07);backdrop-filter:blur(8px);max-width:96vw; }
+.demo-row{ display:flex;gap:5px;justify-content:center; }
+.dbtn{ font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:0.08em;text-transform:uppercase;padding:5px 9px;border-radius:2px;cursor:pointer;border:1px solid;background:transparent;transition:background 0.15s; }
+.dbtn:disabled{ opacity:0.22;cursor:default; }
+.dbtn.amber{ color:var(--amber); border-color:rgba(255,183,0,0.4); }
+.dbtn.amber:not(:disabled):hover{ background:rgba(255,183,0,0.08); }
+.dbtn.green{ color:var(--green); border-color:rgba(0,255,136,0.4); }
+.dbtn.green:not(:disabled):hover{ background:rgba(0,255,136,0.08); }
+.dbtn.cyan { color:var(--cyan);  border-color:rgba(0,229,255,0.3); }
+.dbtn.cyan:hover{ background:rgba(0,229,255,0.06); }
+.dbtn.red  { color:var(--red);   border-color:rgba(255,51,85,0.4); }
+.dbtn.red:hover{ background:rgba(255,51,85,0.07); }
+.dbtn.orange{ color:var(--orange);border-color:rgba(255,119,0,0.4); }
+.dbtn.orange:hover{ background:rgba(255,119,0,0.07); }
+.demo-sep{ width:1px;background:rgba(255,255,255,0.08);margin:0 2px;align-self:stretch; }
+.demo-lbl{ font-family:'Share Tech Mono',monospace;font-size:7px;color:rgba(255,255,255,0.2);align-self:center;letter-spacing:0.08em;text-transform:uppercase;padding:0 4px; }
 </style>
 </head>
 <body>
+<div id="alert-overlay"></div>
 <div class="hud">
 
-  <!-- TOP BAR -->
   <div class="topbar">
     <span class="tb-brand">Claude · Neural HUD</span>
     <div class="tb-mid">
-      <div class="tb-dot"></div>
-      <span class="tb-status">uplink nominal · anthropic cloud</span>
+      <div class="tb-dot" id="tb-dot"></div>
+      <span class="tb-status" id="tb-status">uplink nominal · anthropic cloud</span>
     </div>
     <span class="tb-clock" id="clock">00:00:00</span>
   </div>
 
-  <!-- PANELS -->
   <div class="panels">
-
     <!-- SESSION -->
     <div class="panel panel-s">
-      <div class="glow"></div>
-      <div class="panel-sig">SIG-01</div>
-      <div class="panel-name">Current Session</div>
-
+      <div class="p-name">Current Session</div>
       <div class="num-row">
-        <div class="big" id="s-num">--</div>
-        <div class="pct-sym">%</div>
+        <div class="big" id="s-big">79</div>
+        <div class="pct-sym" id="s-sym">%</div>
       </div>
-
       <div class="prog-wrap">
-        <div class="prog-label-row">
-          <span class="prog-label">session load</span>
-          <span class="prog-pct-txt" id="s-pct-txt">-- / 100%</span>
+        <div class="p-bar-row">
+          <span class="p-bar-label">Session Load</span>
+          <span class="p-bar-pct" id="s-pct">79%</span>
         </div>
-        <div class="prog-track">
-          <div class="prog-fill" id="s-fill" style="width:0%"></div>
-        </div>
-        <div class="prog-ticks">
-          <span class="prog-tick">0</span>
-          <span class="prog-tick">25</span>
-          <span class="prog-tick">50</span>
-          <span class="prog-tick">75</span>
-          <span class="prog-tick">100</span>
-        </div>
+        <div class="prog-track"><div class="prog-fill" id="s-fill" style="width:79%"></div></div>
       </div>
-
-      <div class="segs" id="s-segs"></div>
-
-      <div class="data-rows">
-        <div class="data-row">
-          <span class="d-label">Status</span>
-          <span class="d-val" id="s-status">ACQUIRING</span>
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Status</div>
+          <div class="stat-val" id="s-status">HIGH</div>
         </div>
-        <div class="data-row">
-          <span class="d-label">Resets in</span>
-          <span class="d-val" id="s-reset">—</span>
+        <div class="reset-block" style="text-align:right">
+          <div class="reset-label">Resets in</div>
+          <div class="reset-val" id="s-reset">2h 14m</div>
         </div>
       </div>
     </div>
 
-    <!-- WEEKLY -->
-    <div class="panel panel-w">
-      <div class="glow"></div>
-      <div class="panel-sig">SIG-02</div>
-      <div class="panel-name">Weekly Usage</div>
-
-      <div class="num-row">
-        <div class="big" id="w-num">--</div>
-        <div class="pct-sym">%</div>
-      </div>
-
-      <div class="prog-wrap">
-        <div class="prog-label-row">
-          <span class="prog-label">weekly load</span>
-          <span class="prog-pct-txt" id="w-pct-txt">-- / 100%</span>
+    <!-- RIGHT WRAPPER -->
+    <div id="right-wrapper">
+      <!-- WEEKLY -->
+      <div class="panel" id="weekly-panel">
+        <div class="p-name">Weekly Usage</div>
+        <div class="num-row">
+          <div class="big" id="w-big">29</div>
+          <div class="pct-sym" id="w-sym">%</div>
         </div>
-        <div class="prog-track">
-          <div class="prog-fill" id="w-fill" style="width:0%"></div>
+        <div class="prog-wrap">
+          <div class="p-bar-row">
+            <span class="p-bar-label">Weekly Load</span>
+            <span class="p-bar-pct" id="w-pct">29%</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" id="w-fill" style="width:29%"></div></div>
         </div>
-        <div class="prog-ticks">
-          <span class="prog-tick">0</span>
-          <span class="prog-tick">25</span>
-          <span class="prog-tick">50</span>
-          <span class="prog-tick">75</span>
-          <span class="prog-tick">100</span>
-        </div>
-      </div>
-
-      <div class="segs" id="w-segs"></div>
-
-      <div class="data-rows">
-        <div class="data-row">
-          <span class="d-label">Status</span>
-          <span class="d-val" id="w-status">ACQUIRING</span>
-        </div>
-        <div class="data-row">
-          <span class="d-label">Resets</span>
-          <span class="d-val" id="w-reset">—</span>
+        <div class="stat-row">
+          <div>
+            <div class="stat-label">Status</div>
+            <div class="stat-val" id="w-status">NOMINAL</div>
+          </div>
+          <div class="reset-block" style="text-align:right">
+            <div class="reset-label">Resets in</div>
+            <div class="reset-val" id="w-reset">4d 12h</div>
+          </div>
         </div>
       </div>
+
+      <!-- COWORK -->
+      <div class="panel" id="cowork-panel">
+        <div class="cw-complete-flash" id="cw-flash"></div>
+        <div class="cw-name">CoWork · Live Session</div>
+        <div class="cw-status-row">
+          <div class="cw-dot" id="cw-dot"></div>
+          <div class="cw-status-lbl" id="cw-status-lbl">RUNNING</div>
+          <div class="cw-wave" id="cw-wave"></div>
+        </div>
+        <div class="cw-task-label">Active Task</div>
+        <div class="cw-task-name" id="cw-task">—</div>
+        <div class="cw-div"></div>
+        <div class="cw-step-label" id="cw-step-label">Last Completed Step</div>
+        <div class="cw-step-text"><span id="cw-step-inner"></span><span class="cw-cursor" id="cw-cursor"></span></div>
+        <div class="cw-foot">
+          <span class="cw-elapsed" id="cw-elapsed">Elapsed: 0s</span>
+          <span class="cw-stepcnt" id="cw-stepcnt">—</span>
+        </div>
+      </div>
+
+      <canvas id="scan-canvas"></canvas>
+      <svg id="border-svg">
+        <defs>
+          <filter id="glow-filter" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect id="border-rect" x="0.5" y="0.5" rx="3" fill="none" stroke-width="1.5" filter="url(#glow-filter)"/>
+      </svg>
     </div>
-
   </div>
 
-  <!-- BOTTOM BAR -->
   <div class="btmbar">
-    <span class="btm-txt">claude command center · hud v3.0</span>
+    <span class="btm-txt">claude command center · hud v5.0</span>
     <span class="btm-date" id="date-str">—</span>
-    <span class="btm-sync" id="sync-time">syncing...</span>
+    <span class="btm-sync" id="sync-time">synced —</span>
   </div>
+</div>
 
+<!-- DEMO CONTROLS -->
+<div class="demo-bar">
+  <div class="demo-row">
+    <span class="demo-lbl">cowork</span>
+    <button class="dbtn amber"  id="btn-start">▶ Start</button>
+    <button class="dbtn cyan"   id="btn-approval" disabled>⏸ Approval</button>
+    <button class="dbtn orange" id="btn-idle"     disabled>⚡ Idle</button>
+    <button class="dbtn green"  id="btn-done"     disabled>✓ Done</button>
+    <button class="dbtn cyan"   id="btn-auto">⟳ Auto</button>
+    <div class="demo-sep"></div>
+    <span class="demo-lbl">usage</span>
+    <button class="dbtn red"  id="btn-full">⚠ 100%</button>
+    <button class="dbtn green" id="btn-rdy">✦ Reset</button>
+  </div>
+  <div class="demo-row">
+    <span class="demo-lbl">sounds</span>
+    <button class="dbtn red"    id="btn-s1">🔔 School Bell</button>
+    <button class="dbtn green"  id="btn-s2">✦ Complete</button>
+    <button class="dbtn orange" id="btn-s3">⚡ Idle Warn</button>
+    <button class="dbtn cyan"   id="btn-s4">⏸ Approval</button>
+  </div>
 </div>
 
 <script>
-var PROXY_URL = "/api/usage";
+const S = {
+  mode:'weekly', busy:false, taskStart:null,
+  elapsedTimer:null, idleTimer:null,
+  autoRunning:false, autoTimer:null,
+  sFull:false, wFull:false,
+  audioCtx:null
+};
 
-var S = { sp: 0, sr: '', wp: 0, wr: '' };
-var lastSync = null;
+const POLL_SCREEN_ON_MS  = 30000;
+const POLL_SCREEN_OFF_MS = 60 * 60000;
+const IDLE_WARN_MS = 300000;
 
-function pad(n) { return n < 10 ? '0' + n : '' + n; }
+const DEMO_TASK = 'Quarterly business review deck';
+const DEMO_STEPS = [
+  'Reading uploaded brief document',
+  'Web search: Q2 financial benchmarks',
+  'Analyzing 4 competitor reports',
+  'Drafting executive summary',
+  'Writing slides 1–7 of 14',
+  'Writing slides 8–14 of 14',
+  'Inserting charts and visuals',
+  'Formatting layout and typography',
+  'Exporting final PowerPoint file',
+];
 
-function statusLabel(p) {
-  if (p === 0)   return 'STANDBY';
-  if (p < 25)    return 'LOW';
-  if (p < 50)    return 'NOMINAL';
-  if (p < 75)    return 'ELEVATED';
-  if (p < 90)    return 'HIGH';
-  if (p < 100)   return 'CRITICAL';
-  return 'MAXED';
+function getAudioCtx() {
+  if (!S.audioCtx) S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (S.audioCtx.state === 'suspended') S.audioCtx.resume();
+  return S.audioCtx;
 }
 
-function buildSegs(id, pct, isCyan) {
-  var el = document.getElementById(id);
-  var n = 24, filled = Math.round(pct / 100 * n), html = '';
-  for (var i = 0; i < n; i++) {
-    var lit = i < filled;
-    var opacity = lit ? (0.35 + i / n * 0.65) : 0.07;
-    var c = isCyan ? '0,229,255' : '176,107,255';
-    html += '<div class="seg" style="background:rgba(' + c + ',' + opacity + ')"></div>';
+function playSchoolBell() {
+  const ctx = getAudioCtx();
+  const base = 900;
+  const partials = [[1.0, 0.45], [2.76, 0.28], [5.4, 0.14], [8.93, 0.07]];
+  const hits = 8;
+  for (let h = 0; h < hits; h++) {
+    const t = ctx.currentTime + h * 0.11;
+    partials.forEach(([ratio, amp]) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.value = base * ratio;
+      g.gain.setValueAtTime(amp * 0.7, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+      o.start(t); o.stop(t + 0.11);
+    });
   }
-  el.innerHTML = html;
 }
 
-function formatReset(epochSeconds) {
-  if (!epochSeconds) return '—';
-  var d = new Date(parseFloat(epochSeconds) * 1000);
-  var now = new Date();
-  var diffMs = d - now;
-  if (diffMs <= 0) return 'soon';
-  var h = Math.floor(diffMs / 3600000);
-  var m = Math.floor((diffMs % 3600000) / 60000);
-  if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
-  return h + 'h ' + m + 'm';
+function playCompleteChime() {
+  const ctx = getAudioCtx();
+  [[523.25, 0], [659.25, 0.2], [783.99, 0.4], [1046.5, 0.6], [1046.5, 0.85]].forEach(([freq, offset]) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = freq;
+    const t = ctx.currentTime + offset;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.28, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, t + (offset === 0.85 ? 0.9 : 0.5));
+    o.start(t); o.stop(t + 1.0);
+  });
 }
 
-function render() {
-  var sp = Math.min(Math.max(S.sp || 0, 0), 100);
-  var wp = Math.min(Math.max(S.wp || 0, 0), 100);
+function playIdleWarning() {
+  const ctx = getAudioCtx();
+  [[0, 380, 260], [0.55, 320, 210]].forEach(([offset, f1, f2]) => {
+    const t = ctx.currentTime + offset;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(f1, t);
+    o.frequency.linearRampToValueAtTime(f2, t + 0.45);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.3, t + 0.06);
+    g.gain.setValueAtTime(0.3, t + 0.3);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    o.start(t); o.stop(t + 0.55);
+  });
+}
 
-  document.getElementById('s-num').textContent = lastSync ? sp : '--';
-  document.getElementById('s-fill').style.width = sp + '%';
-  document.getElementById('s-pct-txt').textContent = sp + '% used';
-  document.getElementById('s-status').textContent = lastSync ? statusLabel(sp) : 'ACQUIRING';
-  document.getElementById('s-reset').textContent = S.sr || '—';
-  buildSegs('s-segs', sp, true);
+function playApprovalPing() {
+  const ctx = getAudioCtx();
+  [0, 0.16, 0.32].forEach(offset => {
+    const t = ctx.currentTime + offset;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = 1200;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.25, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+    o.start(t); o.stop(t + 0.14);
+  });
+}
 
-  document.getElementById('w-num').textContent = lastSync ? wp : '--';
-  document.getElementById('w-fill').style.width = wp + '%';
-  document.getElementById('w-pct-txt').textContent = wp + '% used';
-  document.getElementById('w-status').textContent = lastSync ? statusLabel(wp) : 'ACQUIRING';
-  document.getElementById('w-reset').textContent = S.wr || '—';
-  buildSegs('w-segs', wp, false);
+function triggerFullAlert(panel) {
+  const overlay = document.getElementById('alert-overlay');
+  gsap.timeline()
+    .to(overlay,{backgroundColor:'rgba(255,51,85,0.2)',duration:0.06})
+    .to(overlay,{backgroundColor:'rgba(255,51,85,0.07)',duration:0.12})
+    .to(overlay,{backgroundColor:'rgba(255,51,85,0.16)',duration:0.06})
+    .to(overlay,{backgroundColor:'rgba(255,51,85,0.07)',duration:0.12})
+    .to(overlay,{backgroundColor:'rgba(255,51,85,0)',duration:0.7,ease:'power2.in'});
+  document.getElementById('tb-dot').className = 'tb-dot alert-red';
+  document.getElementById('tb-status').textContent = 'SESSION LIMIT REACHED · LOCKED';
+  playSchoolBell();
+}
 
-  // Clock
-  var now = new Date();
-  document.getElementById('clock').textContent =
-    pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+function triggerReadyAlert(panel) {
+  document.getElementById('tb-dot').className = 'tb-dot';
+  document.getElementById('tb-status').textContent = 'session reset · claude ready';
+  playCompleteChime();
+  setTimeout(() => {
+    if (!S.sFull && !S.wFull)
+      document.getElementById('tb-status').textContent = 'uplink nominal · anthropic cloud';
+  }, 4500);
+}
 
-  // Date
-  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('date-str').textContent =
-    days[now.getDay()] + ' ' + now.getDate() + ' ' + mo[now.getMonth()] + ' ' + now.getFullYear();
-
-  // Sync time
-  if (lastSync) {
-    document.getElementById('sync-time').textContent =
-      'synced ' + pad(lastSync.getHours()) + ':' + pad(lastSync.getMinutes()) + ':' + pad(lastSync.getSeconds());
+function updatePanel(panel, pct, resetStr, isFull, isReady) {
+  const p = panel === 'session' ? 's' : 'w';
+  const bigEl = document.getElementById(p+'-big');
+  const fillEl = document.getElementById(p+'-fill');
+  const pctEl = document.getElementById(p+'-pct');
+  const statEl = document.getElementById(p+'-status');
+  const symEl = document.getElementById(p+'-sym');
+  document.getElementById(p+'-reset').textContent = resetStr;
+  bigEl.classList.remove('full','ready');
+  fillEl.classList.remove('full');
+  statEl.classList.remove('crit','rdy');
+  symEl.style.display = '';
+  if (isFull) {
+    bigEl.textContent='FULL'; bigEl.classList.add('full'); symEl.style.display='none';
+    fillEl.style.width='100%'; fillEl.classList.add('full');
+    pctEl.textContent='100%'; statEl.textContent='LOCKED'; statEl.classList.add('crit');
+  } else if (isReady) {
+    bigEl.textContent='READY'; bigEl.classList.add('ready'); symEl.style.display='none';
+    fillEl.style.width='0%'; pctEl.textContent='0%';
+    statEl.textContent='READY'; statEl.classList.add('rdy');
+  } else {
+    bigEl.textContent=pct; fillEl.style.width=pct+'%';
+    pctEl.textContent=pct+'%'; statEl.textContent=statusLabel(pct/100);
   }
+}
+
+function statusLabel(u) {
+  if(u>=1.0) return 'LOCKED'; if(u>=0.9) return 'CRITICAL';
+  if(u>=0.75) return 'HIGH'; if(u>=0.5) return 'ELEVATED';
+  if(u>=0.25) return 'NOMINAL'; return 'LOW';
+}
+
+function simFull() {
+  updatePanel('session',100,'4h 59m',true,false);
+  if(!S.sFull){S.sFull=true;triggerFullAlert('session');}
+}
+function simReady() {
+  const was=S.sFull; S.sFull=false;
+  updatePanel('session',0,'5h 00m',false,true);
+  if(was) triggerReadyAlert('session');
+  setTimeout(()=>updatePanel('session',12,'4h 52m',false,false),3200);
+}
+
+function startIdleTimer() {
+  clearTimeout(S.idleTimer);
+  S.idleTimer = setTimeout(()=>{
+    if(S.mode!=='cowork') return;
+    document.getElementById('cw-dot').className='cw-dot idle';
+    const lbl=document.getElementById('cw-status-lbl');
+    lbl.textContent='IDLE'; lbl.className='cw-status-lbl idle';
+    document.getElementById('cowork-panel').classList.add('idle-warn');
+    document.getElementById('cw-step-label').textContent='Last Known Step';
+    document.getElementById('tb-dot').className='tb-dot alert-amber';
+    document.getElementById('tb-status').textContent='cowork · no activity detected';
+    document.getElementById('cw-wave').innerHTML='';
+    playIdleWarning();
+  }, IDLE_WARN_MS);
+}
+
+function clearIdleState() {
+  document.getElementById('cw-dot').className='cw-dot';
+  const lbl=document.getElementById('cw-status-lbl');
+  lbl.textContent='RUNNING'; lbl.className='cw-status-lbl';
+  document.getElementById('cowork-panel').classList.remove('idle-warn','approval');
+  document.getElementById('cw-step-label').textContent='Last Completed Step';
+  document.getElementById('tb-dot').className='tb-dot';
+  document.getElementById('tb-status').textContent='cowork session · active';
+  buildWave();
+}
+
+function setApprovalState() {
+  if(S.mode!=='cowork') return;
+  clearTimeout(S.idleTimer);
+  document.getElementById('cw-dot').className='cw-dot wait';
+  const lbl=document.getElementById('cw-status-lbl');
+  lbl.textContent='WAITING'; lbl.className='cw-status-lbl wait';
+  document.getElementById('cowork-panel').classList.add('approval');
+  document.getElementById('cowork-panel').classList.remove('idle-warn');
+  document.getElementById('cw-step-label').textContent='Waiting For Your Input';
+  document.getElementById('tb-dot').className='tb-dot alert-cyan';
+  document.getElementById('tb-status').textContent='cowork · approval required';
+  document.getElementById('cw-wave').innerHTML='';
+  playApprovalPing();
+}
+
+class Particles {
+  constructor(canvas){ this.c=canvas; this.x=canvas.getContext('2d'); this.p=[]; this.raf=null; }
+  burst(cx,cy,color,n=45){
+    for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2, spd=0.8+Math.random()*3.5;
+      this.p.push({x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-0.8,life:1,dec:0.018+Math.random()*0.022,sz:0.6+Math.random()*2.2,col:color,glow:8+Math.random()*8});
+    }
+    this._run();
+  }
+  spray(y,color,w,dir=1){
+    for(let i=0;i<Math.floor(w/5);i++){
+      if(Math.random()>0.5)continue;
+      this.p.push({x:Math.random()*w,y,vx:(Math.random()-0.5)*1.8,vy:dir*(-0.4-Math.random()*2.2),life:0.9+Math.random()*0.3,dec:0.022+Math.random()*0.03,sz:0.4+Math.random()*1.6,col:color,glow:5});
+    }
+    if(!this.raf) this._run();
+  }
+  _run(){
+    const ctx=this.x,c=this.c;
+    ctx.clearRect(0,0,c.width,c.height);
+    for(let i=this.p.length-1;i>=0;i--){
+      const p=this.p[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life-=p.dec;
+      if(p.life<=0){this.p.splice(i,1);continue;}
+      ctx.save(); ctx.globalAlpha=Math.max(0,p.life);
+      ctx.shadowBlur=p.glow; ctx.shadowColor=p.col; ctx.fillStyle=p.col;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+    this.raf=this.p.length>0?requestAnimationFrame(()=>this._run()):null;
+  }
+  clear(){ this.p=[]; if(this.raf){cancelAnimationFrame(this.raf);this.raf=null;} this.x.clearRect(0,0,this.c.width,this.c.height); }
+}
+
+let particles;
+function sizeOverlays(){
+  const wrap=document.getElementById('right-wrapper');
+  const r=wrap.getBoundingClientRect();
+  const canvas=document.getElementById('scan-canvas');
+  canvas.width=r.width; canvas.height=r.height;
+  const svg=document.getElementById('border-svg');
+  svg.setAttribute('width',r.width); svg.setAttribute('height',r.height);
+  document.getElementById('border-rect').setAttribute('width',r.width-1);
+  document.getElementById('border-rect').setAttribute('height',r.height-1);
+  particles=new Particles(canvas);
+}
+window.addEventListener('resize', sizeOverlays);
+
+function traceBorder(color, dur=0.7){
+  const svg=document.getElementById('border-svg');
+  const rect=document.getElementById('border-rect');
+  const w=parseFloat(svg.getAttribute('width'))-1;
+  const h=parseFloat(svg.getAttribute('height'))-1;
+  const perim=2*(w+h);
+  rect.setAttribute('stroke',color);
+  rect.style.strokeDasharray=perim; rect.style.strokeDashoffset=perim;
+  svg.style.display='block'; svg.style.opacity='1';
+  gsap.fromTo(rect,{strokeDashoffset:perim},{strokeDashoffset:0,duration:dur,ease:'power2.inOut',
+    onComplete(){ gsap.to(svg,{opacity:0,duration:0.5,delay:0.1,onComplete(){svg.style.display='none';svg.style.opacity='';}}) }
+  });
+}
+
+function runScan(color, dir, onMid, onDone){
+  const canvas=document.getElementById('scan-canvas');
+  const ctx=canvas.getContext('2d');
+  const h=canvas.height, w=canvas.width;
+  const DUR=520; const start=performance.now(); let midFired=false;
+  canvas.style.display='block';
+  function frame(now){
+    const t=Math.min((now-start)/DUR,1);
+    const ease=t<0.5?2*t*t:-1+(4-2*t)*t;
+    const scanY=dir==='down'?ease*h:h-ease*h;
+    ctx.clearRect(0,0,w,h);
+    const grad=ctx.createLinearGradient(0,scanY-7,0,scanY+7);
+    grad.addColorStop(0,'transparent'); grad.addColorStop(0.45,color+'aa');
+    grad.addColorStop(0.5,color+'ff'); grad.addColorStop(0.55,color+'aa'); grad.addColorStop(1,'transparent');
+    ctx.save(); ctx.shadowBlur=28; ctx.shadowColor=color; ctx.fillStyle=grad;
+    ctx.fillRect(0,scanY-7,w,14); ctx.restore();
+    if(t<0.95&&Math.random()>0.4) particles.spray(scanY,color,w,dir==='down'?1:-1);
+    if(t>=0.5&&!midFired){midFired=true;onMid();}
+    t<1?requestAnimationFrame(frame):(canvas.style.display='none',onDone());
+  }
+  requestAnimationFrame(frame);
+}
+
+let _tw=null;
+function typewrite(text){
+  const el=document.getElementById('cw-step-inner');
+  const cur=document.getElementById('cw-cursor');
+  if(_tw)clearInterval(_tw);
+  el.textContent=''; cur.style.display='inline-block'; let i=0;
+  _tw=setInterval(()=>{ el.textContent+=text[i++]; if(i>=text.length){clearInterval(_tw);_tw=null;} },30);
+}
+
+function buildWave(){
+  const wrap=document.getElementById('cw-wave'); wrap.innerHTML='';
+  for(let i=0;i<8;i++){
+    const b=document.createElement('div'); b.className='cw-bar';
+    b.style.animationDelay=(i*0.09)+'s';
+    b.style.animationDuration=(0.5+Math.random()*0.5)+'s';
+    wrap.appendChild(b);
+  }
+}
+
+function transitionToCoWork(taskName){
+  if(S.busy||S.mode==='cowork') return;
+  S.busy=true;
+  const weekly=document.getElementById('weekly-panel');
+  const cowork=document.getElementById('cowork-panel');
+  document.getElementById('tb-status').textContent='cowork session · incoming signal';
+  gsap.to('.panel-s',{boxShadow:'0 0 22px rgba(0,229,255,0.18)',duration:0.2,yoyo:true,repeat:1});
+  gsap.to(weekly,{filter:'brightness(1.8) hue-rotate(70deg)',duration:0.1,yoyo:true,repeat:3,ease:'none',onComplete(){gsap.set(weekly,{filter:'none'});}});
+  setTimeout(()=>{
+    runScan('#b06bff','down',
+      ()=>{
+        gsap.to(weekly,{opacity:0,duration:0.3,ease:'power2.in',onComplete(){weekly.style.pointerEvents='none';}});
+        document.getElementById('cw-task').textContent=taskName;
+        const lbl=document.getElementById('cw-status-lbl');
+        lbl.textContent='RUNNING'; lbl.className='cw-status-lbl';
+        document.getElementById('cw-dot').className='cw-dot';
+        document.getElementById('cowork-panel').className='panel';
+        document.getElementById('cowork-panel').style.cssText='border-color:var(--amber-b);background:#000;position:absolute;inset:0;display:flex;flex-direction:column;gap:0;padding:12px 16px;opacity:0;pointer-events:auto;';
+        document.getElementById('cw-step-label').textContent='Last Completed Step';
+        document.getElementById('cw-step-inner').textContent='';
+        document.getElementById('cw-cursor').style.display='none';
+        document.getElementById('cw-elapsed').textContent='Elapsed: 0s';
+        document.getElementById('cw-stepcnt').textContent='—';
+        buildWave(); cowork.style.opacity='0'; cowork.style.pointerEvents='auto';
+      },
+      ()=>{
+        const r=document.getElementById('right-wrapper').getBoundingClientRect();
+        particles.burst(r.width/2,r.height/2,'#ffb700',55);
+        traceBorder('#ffb700',0.7);
+        gsap.set(cowork,{clipPath:'inset(50% 0 50% 0)',opacity:1});
+        gsap.to(cowork,{clipPath:'inset(0% 0 0% 0)',duration:0.55,ease:'power3.out',delay:0.1,
+          onComplete(){
+            S.mode='cowork'; S.busy=false; S.taskStart=Date.now();
+            document.getElementById('cw-cursor').style.display='inline-block';
+            startElapsed(); startIdleTimer();
+            document.getElementById('btn-done').disabled=false;
+            document.getElementById('btn-approval').disabled=false;
+            document.getElementById('btn-idle').disabled=false;
+            document.getElementById('btn-start').disabled=true;
+          }
+        });
+        gsap.from(cowork.querySelectorAll(':scope > *:not(.cw-complete-flash)'),{opacity:0,y:7,duration:0.4,stagger:0.06,ease:'power2.out',delay:0.2});
+      }
+    );
+  },200);
+}
+
+function transitionToWeekly(){
+  if(S.busy||S.mode==='weekly') return;
+  S.busy=true;
+  clearTimeout(S.idleTimer);
+  const weekly=document.getElementById('weekly-panel');
+  const cowork=document.getElementById('cowork-panel');
+  stopElapsed();
+  document.getElementById('tb-status').textContent='task complete · returning to standby';
+  const lbl=document.getElementById('cw-status-lbl');
+  lbl.textContent='COMPLETE'; lbl.className='cw-status-lbl done';
+  document.getElementById('cw-dot').className='cw-dot done';
+  document.getElementById('cw-wave').innerHTML='';
+  if(_tw)clearInterval(_tw);
+  document.getElementById('cw-cursor').style.display='none';
+  const flash=document.getElementById('cw-flash');
+  gsap.timeline().to(flash,{backgroundColor:'rgba(0,255,136,0.14)',duration:0.2}).to(flash,{backgroundColor:'rgba(0,255,136,0)',duration:0.6});
+  const r=document.getElementById('right-wrapper').getBoundingClientRect();
+  particles.burst(r.width/2,r.height/2,'#00ff88',65);
+  playCompleteChime();
+  setTimeout(()=>{
+    weekly.style.opacity='0'; weekly.style.pointerEvents='none';
+    runScan('#00ff88','up',
+      ()=>{ gsap.to(cowork,{opacity:0,duration:0.3,ease:'power2.in',onComplete(){cowork.style.pointerEvents='none';}}); },
+      ()=>{
+        traceBorder('#b06bff',0.7);
+        gsap.set(weekly,{clipPath:'inset(0% 0 100% 0)',opacity:1,pointerEvents:'auto'});
+        gsap.to(weekly,{clipPath:'inset(0% 0 0% 0)',duration:0.55,ease:'power3.out',delay:0.1,
+          onComplete(){
+            document.getElementById('tb-dot').className='tb-dot';
+            document.getElementById('tb-status').textContent='uplink nominal · anthropic cloud';
+            S.mode='weekly'; S.busy=false;
+            document.getElementById('btn-start').disabled=false;
+            document.getElementById('btn-done').disabled=true;
+            document.getElementById('btn-approval').disabled=true;
+            document.getElementById('btn-idle').disabled=true;
+          }
+        });
+        gsap.from(weekly.querySelectorAll(':scope > *'),{opacity:0,y:-7,duration:0.4,stagger:0.06,ease:'power2.out',delay:0.2});
+      }
+    );
+  },500);
+}
+
+function pushStep(text,idx,total){
+  if(S.mode!=='cowork') return;
+  clearIdleState();
+  startIdleTimer();
+  document.getElementById('cw-stepcnt').textContent='Step '+idx+' of '+total;
+  typewrite(text);
+  gsap.fromTo(document.getElementById('cw-step-inner'),{color:'#ffee88'},{color:'rgba(255,183,0,0.92)',duration:0.7});
+}
+
+function startElapsed(){
+  S.elapsedTimer=setInterval(()=>{
+    if(!S.taskStart) return;
+    const sec=Math.floor((Date.now()-S.taskStart)/1000);
+    const m=Math.floor(sec/60), s=sec%60;
+    document.getElementById('cw-elapsed').textContent='Elapsed: '+(m>0?m+'m ':'')+s+'s';
+  },1000);
+}
+function stopElapsed(){ clearInterval(S.elapsedTimer); S.elapsedTimer=null; }
+
+let pollTimer = null;
+
+function formatReset(isoStr) {
+  if (!isoStr) return '—';
+  const diff = new Date(isoStr) - Date.now();
+  if (diff <= 0) return '0m';
+  const totalSec = Math.floor(diff / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  if (d > 0) return d + 'd ' + h + 'h';
+  if (h > 0) return h + 'h ' + m + 'm';
+  return m + 'm';
 }
 
 async function fetchUsage() {
   try {
-    var resp = await fetch(PROXY_URL);
-    var data = await resp.json();
-    S.sp = Math.round(parseFloat(data.sessionUtilization || 0) * 100);
-    S.wp = Math.round(parseFloat(data.weeklyUtilization  || 0) * 100);
-    S.sr = formatReset(data.sessionReset);
-    S.wr = formatReset(data.weeklyReset);
-    lastSync = new Date();
-    render();
-  } catch (e) {
-    console.error('Usage fetch failed:', e);
+    const r = await fetch('/api/usage', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const sRaw = parseFloat(d.sessionUtilization) || 0;
+    const wRaw = parseFloat(d.weeklyUtilization) || 0;
+    const sPct = Math.round(sRaw * 100);
+    const wPct = Math.round(wRaw * 100);
+    const sReset = formatReset(d.sessionReset);
+    const wReset = formatReset(d.weeklyReset);
+    const wasSFull = S.sFull;
+    const wasWFull = S.wFull;
+    S.sFull = sPct >= 100;
+    S.wFull = wPct >= 100;
+    updatePanel('session', sPct, sReset, S.sFull, !S.sFull && wasSFull);
+    updatePanel('weekly',  wPct, wReset, S.wFull, !S.wFull && wasWFull);
+    if (S.sFull && !wasSFull) triggerFullAlert('session');
+    if (S.wFull && !wasWFull) triggerFullAlert('weekly');
+    if (!S.sFull && wasSFull) triggerReadyAlert('session');
+    if (!S.wFull && wasWFull) triggerReadyAlert('weekly');
+    const now = new Date();
+    const pad = n => n < 10 ? '0' + n : '' + n;
+    document.getElementById('sync-time').textContent =
+      'synced ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    document.getElementById('tb-dot').className = 'tb-dot';
+    if (S.mode === 'weekly')
+      document.getElementById('tb-status').textContent = 'uplink nominal · anthropic cloud';
+  } catch(e) {
+    document.getElementById('tb-dot').className = 'tb-dot alert-amber';
+    document.getElementById('tb-status').textContent = 'fetch error · retrying…';
   }
 }
-
-// ── SMART POLLING ──────────────────────────────────────────────────────────
-// Screen ON  → poll every 60 seconds
-// Screen OFF → poll every 10 minutes, fetch immediately on wake
-var ACTIVE_MS = 60000;
-var IDLE_MS   = 600000;
-var pollTimer = null;
 
 function startPolling(ms) {
   clearInterval(pollTimer);
   pollTimer = setInterval(fetchUsage, ms);
 }
 
-document.addEventListener('visibilitychange', function () {
-  if (document.hidden) {
-    startPolling(IDLE_MS);
-  } else {
-    fetchUsage();
-    startPolling(ACTIVE_MS);
-  }
+function screenOn() { fetchUsage(); startPolling(POLL_SCREEN_ON_MS); }
+function screenOff() { startPolling(POLL_SCREEN_OFF_MS); }
+
+if (window.fully) {
+  window.fully.bind('screenOn',  'screenOn()');
+  window.fully.bind('screenOff', 'screenOff()');
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) screenOff(); else screenOn();
 });
 
-fetchUsage();
-startPolling(ACTIVE_MS);
-setInterval(render, 1000);
+function pad(n){return n<10?'0'+n:''+n;}
+function tick(){
+  const now=new Date();
+  document.getElementById('clock').textContent=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('date-str').textContent=days[now.getDay()]+' '+now.getDate()+' '+mo[now.getMonth()]+' '+now.getFullYear();
+}
+setInterval(tick,1000); tick();
+
+function runAutoDemo(){
+  if(S.autoRunning){
+    S.autoRunning=false;
+    document.getElementById('btn-auto').textContent='⟳ Auto';
+    clearTimeout(S.autoTimer); return;
+  }
+  S.autoRunning=true;
+  document.getElementById('btn-auto').textContent='■ Stop';
+  function cycle(){
+    if(!S.autoRunning) return;
+    transitionToCoWork(DEMO_TASK);
+    let t=1800;
+    DEMO_STEPS.forEach((step,i)=>{ S.autoTimer=setTimeout(()=>{if(S.autoRunning)pushStep(step,i+1,DEMO_STEPS.length);},t); t+=1800; });
+    S.autoTimer=setTimeout(()=>{if(S.autoRunning)transitionToWeekly();},t);
+    S.autoTimer=setTimeout(()=>{if(S.autoRunning)cycle();},t+4000);
+  }
+  cycle();
+}
+
+document.getElementById('btn-start').addEventListener('click',()=>{
+  transitionToCoWork(DEMO_TASK);
+  let t=1500;
+  DEMO_STEPS.forEach((step,i)=>{ setTimeout(()=>pushStep(step,i+1,DEMO_STEPS.length),t); t+=1800; });
+});
+document.getElementById('btn-done').addEventListener('click', transitionToWeekly);
+document.getElementById('btn-approval').addEventListener('click', setApprovalState);
+document.getElementById('btn-idle').addEventListener('click', ()=>{
+  clearTimeout(S.idleTimer);
+  if(S.mode==='cowork'){
+    document.getElementById('cw-dot').className='cw-dot idle';
+    const lbl=document.getElementById('cw-status-lbl');
+    lbl.textContent='IDLE'; lbl.className='cw-status-lbl idle';
+    document.getElementById('cowork-panel').classList.add('idle-warn');
+    document.getElementById('cw-step-label').textContent='Last Known Step';
+    document.getElementById('tb-dot').className='tb-dot alert-amber';
+    document.getElementById('tb-status').textContent='cowork · no activity detected';
+    document.getElementById('cw-wave').innerHTML='';
+    playIdleWarning();
+  }
+});
+document.getElementById('btn-auto').addEventListener('click', runAutoDemo);
+document.getElementById('btn-full').addEventListener('click', simFull);
+document.getElementById('btn-rdy').addEventListener('click', simReady);
+document.getElementById('btn-s1').addEventListener('click', playSchoolBell);
+document.getElementById('btn-s2').addEventListener('click', playCompleteChime);
+document.getElementById('btn-s3').addEventListener('click', playIdleWarning);
+document.getElementById('btn-s4').addEventListener('click', playApprovalPing);
+
+window.addEventListener('load',()=>{
+  sizeOverlays();
+  document.getElementById('weekly-panel').style.opacity='1';
+  document.getElementById('weekly-panel').style.pointerEvents='auto';
+  document.getElementById('cowork-panel').style.opacity='0';
+  document.getElementById('cowork-panel').style.pointerEvents='none';
+  document.getElementById('btn-done').disabled=true;
+  document.getElementById('btn-approval').disabled=true;
+  document.getElementById('btn-idle').disabled=true;
+  document.addEventListener('click',()=>{ if(S.audioCtx&&S.audioCtx.state==='suspended') S.audioCtx.resume(); },{once:true});
+  fetchUsage();
+  startPolling(POLL_SCREEN_ON_MS);
+});
 </script>
 </body>
 </html>
