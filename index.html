@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -256,7 +257,7 @@ html,body{ width:100%;height:100%;background:#000;overflow:hidden;user-select:no
   </div>
 
   <div class="btmbar">
-    <span class="btm-txt">claude command center · hud v5.7</span>
+    <span class="btm-txt">claude command center · hud v5.8</span>
     <span class="btm-date" id="date-str">—</span>
     <span class="btm-sync" id="sync-time">synced —</span>
   </div>
@@ -286,11 +287,13 @@ const S = {
   sessionActive:false  // true only after user taps to begin tracking
 };
 
-const POLL_SCREEN_ON_MS  = 30000;       // 30s whenever screen is on
+const POLL_SCREEN_ON_MS  = 120000;      // 2min whenever screen is on
 const POLL_SCREEN_OFF_MS = 3600000;     // 1h when screen is off
 const IDLE_WARN_MS       = 300000;      // 5min idle before CoWork warning
 const STALE_TASK_MS      = 600000;      // 10min — if running with no update, auto-idle
         const HUD_TOKEN      = 'hud--xzp0JptCPKFSbyC6SddgA'; // matches HUD_SECRET Vercel env var
+const SB_URL        = 'https://gtyqozhccwfywkmvkeyz.supabase.co';
+const SB_ANON       = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0eXFvemhjY3dmeXdrbXZrZXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MzAxNTEsImV4cCI6MjA5NjQwNjE1MX0.uRGSv_A8OWDCfFtrQbcDzXosUNn7asWHAZ0BKmCcJWw';
 
 const DEMO_TASK = 'Quarterly business review deck';
 const DEMO_STEPS = [
@@ -1074,15 +1077,23 @@ function applyTaskState(state) {
   }
   if (status === 'deployed' || status === 'deploy_error') {
     const isOk = status === 'deployed';
-    if (S.mode !== 'cowork' && !S.busy) transitionToCowork();
-    const tn = document.getElementById('cw-task');
-    const ts = document.getElementById('cw-step-inner');
-    const rd = document.getElementById('cw-dot');
-    const sl = document.getElementById('cw-status-lbl');
-    if (tn) tn.textContent = state.task_name || (isOk ? 'deployed' : 'deploy failed');
-    if (ts) ts.textContent = state.step_text || '';
-    if (rd) rd.style.background = isOk ? '#00ff88' : '#ff4444';
-    if (sl) sl.textContent = isOk ? 'DEPLOYED' : 'ERROR';
+    const taskLabel = state.task_name || (isOk ? 'deployed' : 'deploy failed');
+    const setDeployedUI = () => {
+      const tn = document.getElementById('cw-task');
+      const ts = document.getElementById('cw-step-inner');
+      const rd = document.getElementById('cw-dot');
+      const sl = document.getElementById('cw-status-lbl');
+      if (tn) tn.textContent = taskLabel;
+      if (ts) ts.textContent = state.step_text || '';
+      if (rd) { rd.style.background = isOk ? '#00ff88' : '#ff4444'; rd.style.boxShadow = isOk ? '0 0 14px #00ff88' : '0 0 14px #ff4444'; rd.style.animation = 'none'; }
+      if (sl) sl.textContent = isOk ? 'DEPLOYED' : 'ERROR';
+    };
+    if (S.mode !== 'cowork' && !S.busy) {
+      transitionToCoWork(taskLabel);
+      setTimeout(setDeployedUI, 2200); // wait for ~2s transition animation
+    } else {
+      setDeployedUI();
+    }
     if (isOk) setTimeout(() => applyTaskState({ status: 'idle' }), 60000);
     return;
   }
@@ -1106,9 +1117,19 @@ window.addEventListener('load',()=>{
   });
   // Start in READY state — zero Anthropic calls until user taps
   showReadyState();
-  // CoWork task state polling (every 5s — our own Supabase, safe)
+  // Initial fetch to get current state
   fetchTaskState();
-  setInterval(fetchTaskState, 5000);
+  // Supabase Realtime: subscribe to hud_task_state row 1 changes
+  // This replaces polling — instant push when state changes, zero overhead when idle
+  const _sb = supabase.createClient(SB_URL, SB_ANON);
+  _sb.channel('hud-state')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'hud_task_state',
+      filter: 'id=eq.1'
+    }, payload => { applyTaskState(payload.new); })
+    .subscribe();
 });
 </script>
 </body>
