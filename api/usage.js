@@ -1,5 +1,11 @@
 export const config = { runtime: 'edge' };
 
+const CORS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Cache-Control': 'no-store'
+};
+
 export default async function handler(request) {
 
   // CORS preflight
@@ -8,16 +14,23 @@ export default async function handler(request) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'x-hud-token',
       }
     });
   }
 
-  const TOKEN = process.env.ANTHROPIC_TOKEN;
+  // Auth — require x-hud-token if HUD_SECRET env var is set
+  const HUD_SECRET = process.env.HUD_SECRET;
+  if (HUD_SECRET && request.headers.get('x-hud-token') !== HUD_SECRET) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: CORS
+    });
+  }
 
+  const TOKEN = process.env.ANTHROPIC_TOKEN;
   if (!TOKEN) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_TOKEN env var not set' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      status: 500, headers: CORS
     });
   }
 
@@ -38,7 +51,6 @@ export default async function handler(request) {
       })
     });
 
-    // Both 200 and 429 responses include rate-limit headers with live usage data
     const data = {
       sessionUtilization: resp.headers.get('anthropic-ratelimit-unified-5h-utilization'),
       sessionReset:       resp.headers.get('anthropic-ratelimit-unified-5h-reset'),
@@ -50,18 +62,11 @@ export default async function handler(request) {
       httpStatus:         resp.status
     };
 
-    return new Response(JSON.stringify(data), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-store'
-      }
-    });
+    return new Response(JSON.stringify(data), { headers: CORS });
 
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      status: 500, headers: CORS
     });
   }
 }
