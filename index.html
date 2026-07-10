@@ -855,7 +855,7 @@ function showReadyState() {
 async function fetchUsage() {
   if (!S.sessionActive) return;
   try {
-    const r = await fetch('/api/usage', { cache: 'no-store' , headers: { 'x-hud-token': HUD_TOKEN } };
+    const r = await fetch('/api/usage', { cache: 'no-store' , headers: { 'x-hud-token': HUD_TOKEN } });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     retryCount = 0; // reset backoff on success
