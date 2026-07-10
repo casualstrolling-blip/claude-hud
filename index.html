@@ -1072,6 +1072,21 @@ function applyTaskState(state) {
     lastStepText = null;
     if (S.mode === 'cowork' && !S.busy) transitionToWeekly();
   }
+  if (status === 'deployed' || status === 'deploy_error') {
+    const isOk = status === 'deployed';
+    if (S.mode !== 'cowork' && !S.busy) transitionToCowork();
+    const tn = document.getElementById('cw-task');
+    const ts = document.getElementById('cw-step-inner');
+    const rd = document.getElementById('cw-dot');
+    const sl = document.getElementById('cw-status-lbl');
+    if (tn) tn.textContent = state.task_name || (isOk ? 'deployed' : 'deploy failed');
+    if (ts) ts.textContent = state.step_text || '';
+    if (rd) rd.style.background = isOk ? '#00ff88' : '#ff4444';
+    if (sl) sl.textContent = isOk ? 'DEPLOYED' : 'ERROR';
+    if (isOk) setTimeout(() => applyTaskState({ status: 'idle' }), 60000);
+    return;
+  }
+
 }
 
 // ── INIT ──
