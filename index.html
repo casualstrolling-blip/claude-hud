@@ -1184,6 +1184,8 @@ function applyTaskState(state) {
     if (S.mode === 'cowork' && !S.busy) transitionToWeekly();
   }
   if (status === 'deployed' || status === 'deploy_error') {
+    // Skip if this deploy happened >45s ago (already shown, poll caught a stale state)
+    if (state.updated_at && (Date.now() - new Date(state.updated_at).getTime()) > 45000) return;
     const isOk = status === 'deployed';
     const taskLabel = state.task_name || (isOk ? 'deployed' : 'deploy failed');
     const setDeployedUI = () => {
@@ -1203,7 +1205,15 @@ function applyTaskState(state) {
     } else {
       setDeployedUI();
     }
-    if (isOk) setTimeout(() => applyTaskState({ status: 'idle' }), 40000);
+    if (isOk) setTimeout(() => {
+      // Write idle back to Supabase so stale polls don't re-trigger the animation
+      fetch(`${SB_URL}/rest/v1/hud_task_state?id=eq.1`, {
+        method: 'PATCH',
+        headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'idle', updated_at: new Date().toISOString() })
+      }).catch(() => {});
+      applyTaskState({ status: 'idle' });
+    }, 40000);
     return;
   }
 
@@ -1226,10 +1236,21 @@ window.addEventListener('load',()=>{
   });
   // Start in READY state — zero Anthropic calls until user taps
   showReadyState();
-  // Initial fetch to get current state
-  fetchTaskState();
-  // Supabase Realtime: subscribe to hud_task_state row 1 changes
-  // This replaces polling — instant push when state changes, zero overhead when idle
+  // Fetch current state directly from Supabase REST on load
+  async function fetchSbState() {
+    try {
+      const r = await fetch(`${SB_URL}/rest/v1/hud_task_state?id=eq.1&select=*`, {
+        headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` },
+        cache: 'no-store'
+      });
+      const rows = await r.json();
+      if (rows && rows[0]) applyTaskState(rows[0]);
+    } catch(e) {}
+  }
+  fetchSbState();
+  // Poll every 30s as fallback when WebSocket drops (Android kills bg connections)
+  setInterval(fetchSbState, 30000);
+  // Supabase Realtime: instant push when state changes (primary path)
   const _sb = supabase.createClient(SB_URL, SB_ANON);
   _sb.channel('hud-state')
     .on('postgres_changes', {
