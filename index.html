@@ -452,6 +452,23 @@ function playApprovalPing() {
   });
 }
 
+// ❺b DEPLOY TRANSITION — short chirp when cowork panel slides in for a deploy (~0.26s)
+function playDeployBoot() {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+  [0, 0.13].forEach((off, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(700 + i * 350, t + off);
+    o.frequency.exponentialRampToValueAtTime(1500 + i * 350, t + off + 0.1);
+    g.gain.setValueAtTime(0, t + off);
+    g.gain.linearRampToValueAtTime(0.18, t + off + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + off + 0.12);
+    o.start(t + off); o.stop(t + off + 0.14);
+  });
+}
+
 // ❻ JARVIS DEPLOYING — build initializing (Iron Man console boot sequence)
 function playJarvisDeploying() {
   const ctx = getAudioCtx();
@@ -763,10 +780,10 @@ function buildWave(){
 }
 
 // ── TRANSITION: WEEKLY → COWORK ──
-function transitionToCoWork(taskName){
+function transitionToCoWork(taskName, soundFn){
   if(S.busy||S.mode==='cowork') return;
   S.busy=true;
-  playStartupSound();
+  (soundFn || playStartupSound)();
   const weekly=document.getElementById('weekly-panel');
   const cowork=document.getElementById('cowork-panel');
   document.getElementById('tb-status').textContent='cowork session · incoming signal';
@@ -1138,7 +1155,7 @@ function applyTaskState(state) {
     if (S.mode !== 'cowork' && !S.busy) {
       const isDeployTask = (state.task_name || '').includes('deploying');
       if (isDeployTask) setTimeout(playJarvisDeploying, 100);
-      transitionToCoWork(state.task_name || 'CoWork Session');
+      transitionToCoWork(state.task_name || 'CoWork Session', isDeployTask ? playDeployBoot : null);
       if (state.step_text) {
         setTimeout(() => {
           if (state.step_text !== lastStepText) {
