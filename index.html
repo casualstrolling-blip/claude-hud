@@ -257,7 +257,7 @@ html,body{ width:100%;height:100%;background:#000;overflow:hidden;user-select:no
   </div>
 
   <div class="btmbar">
-    <span class="btm-txt">claude command center · hud v5.10</span>
+    <span class="btm-txt">claude command center · hud v5.11</span>
     <span class="btm-date" id="date-str">—</span>
     <span class="btm-sync" id="sync-time">synced —</span>
   </div>
@@ -449,6 +449,97 @@ function playApprovalPing() {
     g.gain.linearRampToValueAtTime(0.25, t + 0.012);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
     o.start(t); o.stop(t + 0.14);
+  });
+}
+
+// ❻ JARVIS DEPLOYING — build initializing (Iron Man console boot sequence)
+function playJarvisDeploying() {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+  // Rapid ascending digital ticks — "system initializing"
+  [0, 0.06, 0.12, 0.18, 0.24].forEach((off, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'square';
+    o.frequency.value = 320 + i * 180;
+    g.gain.setValueAtTime(0.07, t + off);
+    g.gain.exponentialRampToValueAtTime(0.001, t + off + 0.055);
+    o.start(t + off); o.stop(t + off + 0.06);
+  });
+  // Bass power hum rising
+  const bass = ctx.createOscillator(); const bassG = ctx.createGain();
+  bass.connect(bassG); bassG.connect(ctx.destination);
+  bass.type = 'sawtooth';
+  bass.frequency.setValueAtTime(60, t + 0.28);
+  bass.frequency.exponentialRampToValueAtTime(340, t + 0.75);
+  bassG.gain.setValueAtTime(0, t + 0.28);
+  bassG.gain.linearRampToValueAtTime(0.13, t + 0.33);
+  bassG.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+  bass.start(t + 0.28); bass.stop(t + 0.85);
+  // Rising sine sweep overlay
+  const sw = ctx.createOscillator(); const swG = ctx.createGain();
+  sw.connect(swG); swG.connect(ctx.destination);
+  sw.type = 'sine';
+  sw.frequency.setValueAtTime(300, t + 0.3);
+  sw.frequency.exponentialRampToValueAtTime(2200, t + 0.78);
+  swG.gain.setValueAtTime(0, t + 0.3);
+  swG.gain.linearRampToValueAtTime(0.18, t + 0.38);
+  swG.gain.exponentialRampToValueAtTime(0.001, t + 0.82);
+  sw.start(t + 0.3); sw.stop(t + 0.85);
+}
+
+// ❼ JARVIS DEPLOYED — systems online (Iron Man suit locked and loaded)
+function playJarvisDeployed() {
+  const ctx = getAudioCtx();
+  const t = ctx.currentTime;
+  // Sub bass impact — "thud"
+  const sub = ctx.createOscillator(); const subG = ctx.createGain();
+  sub.connect(subG); subG.connect(ctx.destination);
+  sub.type = 'sine';
+  sub.frequency.setValueAtTime(90, t);
+  sub.frequency.exponentialRampToValueAtTime(38, t + 0.18);
+  subG.gain.setValueAtTime(0.55, t);
+  subG.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+  sub.start(t); sub.stop(t + 0.25);
+  // Electronic sweep — "powering up"
+  const sw = ctx.createOscillator(); const swG = ctx.createGain();
+  sw.connect(swG); swG.connect(ctx.destination);
+  sw.type = 'sawtooth';
+  sw.frequency.setValueAtTime(180, t + 0.05);
+  sw.frequency.exponentialRampToValueAtTime(2400, t + 0.5);
+  swG.gain.setValueAtTime(0, t + 0.05);
+  swG.gain.linearRampToValueAtTime(0.14, t + 0.1);
+  swG.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+  sw.start(t + 0.05); sw.stop(t + 0.58);
+  // Digital confirmation clicks — "locked"
+  [0.35, 0.43, 0.51].forEach((off, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'square';
+    o.frequency.value = 1800 + i * 500;
+    g.gain.setValueAtTime(0.09, t + off);
+    g.gain.exponentialRampToValueAtTime(0.001, t + off + 0.05);
+    o.start(t + off); o.stop(t + off + 0.06);
+  });
+  // Final bright confirmation ping — "online"
+  const ping = ctx.createOscillator(); const pingG = ctx.createGain();
+  ping.connect(pingG); pingG.connect(ctx.destination);
+  ping.type = 'sine';
+  ping.frequency.setValueAtTime(1600, t + 0.6);
+  ping.frequency.exponentialRampToValueAtTime(3400, t + 0.85);
+  pingG.gain.setValueAtTime(0, t + 0.6);
+  pingG.gain.linearRampToValueAtTime(0.32, t + 0.63);
+  pingG.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+  ping.start(t + 0.6); ping.stop(t + 1.05);
+  // Harmonic shimmer on top of ping
+  [0.72, 0.80, 0.88].forEach((off, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.value = 4200 + i * 600;
+    g.gain.setValueAtTime(0.06, t + off);
+    g.gain.exponentialRampToValueAtTime(0.001, t + off + 0.12);
+    o.start(t + off); o.stop(t + off + 0.14);
   });
 }
 
@@ -1047,6 +1138,8 @@ function applyTaskState(state) {
 
   if (status === 'running') {
     if (S.mode !== 'cowork' && !S.busy) {
+      const isDeployTask = (state.task_name || '').includes('deploying');
+      if (isDeployTask) setTimeout(playJarvisDeploying, 100);
       transitionToCoWork(state.task_name || 'CoWork Session');
       if (state.step_text) {
         setTimeout(() => {
@@ -1087,10 +1180,11 @@ function applyTaskState(state) {
       if (ts) ts.textContent = state.step_text || '';
       if (rd) { rd.style.background = isOk ? '#00ff88' : '#ff4444'; rd.style.boxShadow = isOk ? '0 0 14px #00ff88' : '0 0 14px #ff4444'; rd.style.animation = 'none'; }
       if (sl) sl.textContent = isOk ? 'DEPLOYED' : 'ERROR';
+      if (isOk) playJarvisDeployed();
     };
     if (S.mode !== 'cowork' && !S.busy) {
       transitionToCoWork(taskLabel);
-      setTimeout(setDeployedUI, 2200); // wait for ~2s transition animation
+      setTimeout(setDeployedUI, 2200);
     } else {
       setDeployedUI();
     }
@@ -1134,4 +1228,3 @@ window.addEventListener('load',()=>{
 </script>
 </body>
 </html>
- 
