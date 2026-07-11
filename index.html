@@ -831,8 +831,6 @@ function transitionToWeekly(){
   gsap.timeline().to(flash,{backgroundColor:'rgba(0,255,136,0.14)',duration:0.2}).to(flash,{backgroundColor:'rgba(0,255,136,0)',duration:0.6});
   const r=document.getElementById('right-wrapper').getBoundingClientRect();
   particles.burst(r.width/2,r.height/2,'#00ff88',65);
-  // Play completion sound
-  playCompleteChime();
   setTimeout(()=>{
     weekly.style.opacity='0'; weekly.style.pointerEvents='none';
     runScan('#00ff88','up',
@@ -1188,7 +1186,7 @@ function applyTaskState(state) {
     } else {
       setDeployedUI();
     }
-    if (isOk) setTimeout(() => applyTaskState({ status: 'idle' }), 60000);
+    if (isOk) setTimeout(() => applyTaskState({ status: 'idle' }), 40000);
     return;
   }
 
