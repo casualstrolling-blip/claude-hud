@@ -1,8 +1,7 @@
 export const config = { runtime: 'edge' };
 
 const SB_URL  = 'https://gtyqozhccwfywkmvkeyz.supabase.co';
-const SB_KEY  = process.env.SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0eXFvemhjY3dmeXdrbXZrZXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MzAxNTEsImV4cCI6MjA5NjQwNjE1MX0.uRGSv_A8OWDCfFtrQbcDzXosUNn7asWHAZ0BKmCcJWw';
+const SB_KEY  = process.env.SUPABASE_ANON_KEY;
 const HEADERS = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
 const CORS    = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
