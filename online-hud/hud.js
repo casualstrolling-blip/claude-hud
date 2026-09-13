@@ -8,8 +8,20 @@
   let live = readSetting('hud-live') === 'true';
   let screenOn = true, timer = null, controller = null, generation = 0, failures = 0;
   const cache = {};
+  const cat = $('cat'), catSprite = $('cat-sprite');
+  const catSource = '/persian-cat.webp?v=20260913-cat1';
   if (location.search) history.replaceState(null, '', location.pathname + location.hash);
   const active = () => !document.hidden && screenOn;
+  function syncCat() {
+    if (active()) {
+      if (!cat.hasAttribute('src')) cat.src = catSource;
+    } else {
+      catSprite.classList.remove('playing');
+      cat.removeAttribute('src');
+    }
+  }
+  cat.onload = () => { if (active()) catSprite.classList.add('playing'); };
+  cat.onerror = () => catSprite.classList.remove('playing');
   function resetTime(value) {
     if (value === null || value === undefined || value === '') return '—';
     const timestamp = typeof value === 'number' || /^\d+$/.test(String(value)) ? Number(value) * 1000 : Date.parse(value);
@@ -65,7 +77,7 @@
       if (ticket === generation && active()) timer = setTimeout(poll, failures ? Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4)) : live ? 1000 : 15000);
     }
   }
-  function resume() { stop(); if (active()) poll(); }
+  function resume() { stop(); syncCat(); if (active()) poll(); }
   function choose(provider) {
     if (!providers[provider]) return;
     stop(); selected = provider; failures = 0;
@@ -87,13 +99,13 @@
   $('dim').onclick = () => setDim(!document.body.classList.contains('dim'));
   document.querySelectorAll('[data-select]').forEach(button => button.onclick = () => { if (selected !== button.dataset.select) choose(button.dataset.select); });
   window.addEventListener('hashchange', () => { const next = location.hash.slice(1); if (next !== selected && providers[next]) choose(next); });
-  document.addEventListener('visibilitychange', () => { if (active()) resume(); else { stop(); connection('Paused', ''); } });
-  window.addEventListener('pagehide', stop);
+  document.addEventListener('visibilitychange', () => { if (active()) resume(); else { stop(); syncCat(); connection('Paused', ''); } });
+  window.addEventListener('pagehide', () => { stop(); catSprite.classList.remove('playing'); cat.removeAttribute('src'); });
   window.addEventListener('pageshow', event => { if (event.persisted) resume(); });
   // Fully Kiosk can report display power changes that do not hide its WebView.
   window.hudScreenOn = () => { screenOn = true; resume(); };
-  window.hudScreenOff = () => { screenOn = false; stop(); connection('Paused', ''); };
+  window.hudScreenOff = () => { screenOn = false; stop(); syncCat(); connection('Paused', ''); };
   try { if (window.fully?.bind) { window.fully.bind('screenOn', 'hudScreenOn()'); window.fully.bind('screenOff', 'hudScreenOff()'); } } catch {}
   $('date').textContent = new Date().toLocaleDateString([], { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase();
-  setDim(readSetting('hud-dim') === 'true'); modeLabel(); choose(selected);
+  setDim(readSetting('hud-dim') === 'true'); modeLabel(); choose(selected); syncCat();
 })();
