@@ -9,10 +9,14 @@ export default async function handler(request) {
   const token = process.env.ANTHROPIC_TOKEN;
   if (!token) return out({ error: 'ANTHROPIC_TOKEN is not configured' }, 500);
   try {
+    const isApiKey = token.startsWith('sk-ant-api');
+    const authentication = isApiKey
+      ? { 'x-api-key': token }
+      : { Authorization: `Bearer ${token}`, 'anthropic-beta': 'oauth-2025-04-20' };
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', headers: {
-        Authorization: `Bearer ${token}`, 'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'oauth-2025-04-20', 'User-Agent': 'claude-code/2.0.37', 'Content-Type': 'application/json',
+        ...authentication, 'anthropic-version': '2023-06-01',
+        'User-Agent': 'claude-code/2.0.37', 'Content-Type': 'application/json',
       }, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: 'x' }] }),
     });
     if (!response.ok) return out({ error: `Claude usage endpoint returned ${response.status}` }, 502);
