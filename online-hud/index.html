@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#000000"><meta name="color-scheme" content="dark">
 <title>Neural · Usage HUD</title>
-<link rel="stylesheet" href="/hud.css?v=20260913-cat1"><script src="/hud.js?v=20260913-cat1" defer></script>
+<link rel="stylesheet" href="/hud.css?v=20260913-cat2"><script src="/hud.js?v=20260913-cat2" defer></script>
 </head>
 <body data-provider="chatgpt">
 <main class="hud" id="hud">
@@ -32,12 +32,12 @@
       </article>
     </div>
     <div class="data-note"><span id="updated">Fetching your usage…</span><a id="sign-in" href="/" hidden>Sign in again ↗</a><span class="oled-note">OLED BLACK <span aria-hidden="true">◆</span></span></div>
-    <div class="cat-lane" aria-hidden="true"><div class="cat-sprite" id="cat-sprite"><img id="cat" alt="" width="480" height="270" decoding="async" fetchpriority="low"></div></div>
   </section>
   <footer class="bottom">
     <nav class="provider-switch" aria-label="Usage provider"><button type="button" data-select="chatgpt" aria-pressed="true"><span class="provider-icon" aria-hidden="true">◎</span><span>ChatGPT</span><span class="selected-dot" aria-hidden="true"></span></button><button type="button" data-select="claude" aria-pressed="false"><span class="provider-icon claude-icon" aria-hidden="true">✳</span><span>Claude</span><span class="selected-dot" aria-hidden="true"></span></button></nav>
     <div class="footer-meta"><span id="date"></span><span>LESS LIGHT. MORE CLARITY.</span></div>
   </footer>
 </main>
+<div class="cat-overlay" id="cat-overlay" data-phase="off" data-side="left" aria-hidden="true"><img id="cat-still" alt="" decoding="async" fetchpriority="low"><video id="cat-motion" muted playsinline preload="none" aria-hidden="true"></video></div>
 </body>
 </html>

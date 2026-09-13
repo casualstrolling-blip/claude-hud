@@ -8,20 +8,84 @@
   let live = readSetting('hud-live') === 'true';
   let screenOn = true, timer = null, controller = null, generation = 0, failures = 0;
   const cache = {};
-  const cat = $('cat'), catSprite = $('cat-sprite');
-  const catSource = '/persian-cat.webp?v=20260913-cat1';
+  const catOverlay = $('cat-overlay');
+  const catStill = $('cat-still'), catMotion = $('cat-motion');
+  const catAssets = {
+    sit: '/cat-sit.png?v=20260913-cat2',
+    lie: '/cat-lie.png?v=20260913-cat2',
+    rest: '/cat-rest.mp4?v=20260913-cat2',
+    walk: '/cat-walk.mp4?v=20260913-cat2',
+    'walk-sit': '/cat-walk-sit.mp4?v=20260913-cat2'
+  };
+  let catTimer = null, catToken = 0;
+  let catRunning = false, lastScene = null, lastSide = 'left';
   if (location.search) history.replaceState(null, '', location.pathname + location.hash);
   const active = () => !document.hidden && screenOn;
-  function syncCat() {
-    if (active()) {
-      if (!cat.hasAttribute('src')) cat.src = catSource;
-    } else {
-      catSprite.classList.remove('playing');
-      cat.removeAttribute('src');
+  const randomBetween = (low, high) => low + Math.floor(Math.random() * (high - low + 1));
+  const restDuration = initial => (initial ? randomBetween(20, 80) : Math.random() < .28 ? randomBetween(240, 300) : randomBetween(45, 180)) * 1000;
+  function queueCat(next, delay) { clearTimeout(catTimer); catTimer = setTimeout(next, delay); }
+  function restCat(side, pose = 'sit', initial = false) {
+    if (!catRunning || !active()) return;
+    clearTimeout(catTimer);
+    const ticket = ++catToken, source = catAssets[pose];
+    lastSide = side;
+    catOverlay.classList.add('changing');
+    const ready = () => {
+      if (ticket !== catToken || !catRunning || !active()) return;
+      catMotion.pause(); catMotion.removeAttribute('src'); catMotion.load();
+      catOverlay.dataset.phase = pose;
+      catOverlay.dataset.side = side;
+      requestAnimationFrame(() => { if (ticket === catToken) catOverlay.classList.remove('changing'); });
+      queueCat(nextEvent, restDuration(initial));
+    };
+    if (catStill.getAttribute('src') === source && catStill.complete && catStill.naturalWidth) setTimeout(ready, 160);
+    else {
+      catStill.onload = () => setTimeout(ready, 160);
+      catStill.onerror = () => { if (ticket === catToken) { catOverlay.dataset.phase = 'off'; queueCat(nextEvent, 60000); } };
+      catStill.src = source;
     }
   }
-  cat.onload = () => { if (active()) catSprite.classList.add('playing'); };
-  cat.onerror = () => catSprite.classList.remove('playing');
+  function playCat(scene, side) {
+    if (!catRunning || !active()) return;
+    const ticket = ++catToken, pose = scene === 'rest' ? 'lie' : 'sit';
+    const phase = scene === 'rest' ? 'rest-motion' : 'walk';
+    catOverlay.classList.add('changing');
+    catMotion.pause();
+    catMotion.oncanplay = () => {
+      if (ticket !== catToken || !catRunning || !active()) return;
+      catMotion.oncanplay = null;
+      catOverlay.dataset.phase = phase;
+      catOverlay.dataset.side = side;
+      requestAnimationFrame(() => { if (ticket === catToken) catOverlay.classList.remove('changing'); });
+      catMotion.play().catch(() => { if (ticket === catToken) restCat(side, 'sit'); });
+      queueCat(() => restCat(side, pose), 15000);
+    };
+    catMotion.onended = () => { if (ticket === catToken) restCat(side, pose); };
+    catMotion.onerror = () => { if (ticket === catToken) restCat(side, 'sit'); };
+    catMotion.src = catAssets[scene];
+    catMotion.load();
+  }
+  function nextEvent() {
+    if (!catRunning || !active()) return;
+    const choices = ['rest', 'walk', 'walk-sit'].filter(scene => scene !== lastScene);
+    const scene = choices[randomBetween(0, choices.length - 1)];
+    lastScene = scene;
+    const side = Math.random() < .6 ? (lastSide === 'left' ? 'right' : 'left') : lastSide;
+    playCat(scene, side);
+  }
+  function startCat() {
+    if (catRunning || !active()) return;
+    catRunning = true;
+    restCat(Math.random() < .5 ? 'left' : 'right', 'sit', true);
+  }
+  function stopCat() {
+    catRunning = false; ++catToken;
+    clearTimeout(catTimer); catTimer = null;
+    catMotion.pause(); catMotion.removeAttribute('src'); catMotion.load();
+    catStill.removeAttribute('src');
+    catOverlay.dataset.phase = 'off';
+    catOverlay.classList.remove('changing');
+  }
   function resetTime(value) {
     if (value === null || value === undefined || value === '') return '—';
     const timestamp = typeof value === 'number' || /^\d+$/.test(String(value)) ? Number(value) * 1000 : Date.parse(value);
@@ -77,7 +141,7 @@
       if (ticket === generation && active()) timer = setTimeout(poll, failures ? Math.min(60000, 5000 * 2 ** Math.min(failures - 1, 4)) : live ? 1000 : 15000);
     }
   }
-  function resume() { stop(); syncCat(); if (active()) poll(); }
+  function resume() { stop(); if (active()) { startCat(); poll(); } }
   function choose(provider) {
     if (!providers[provider]) return;
     stop(); selected = provider; failures = 0;
@@ -99,13 +163,13 @@
   $('dim').onclick = () => setDim(!document.body.classList.contains('dim'));
   document.querySelectorAll('[data-select]').forEach(button => button.onclick = () => { if (selected !== button.dataset.select) choose(button.dataset.select); });
   window.addEventListener('hashchange', () => { const next = location.hash.slice(1); if (next !== selected && providers[next]) choose(next); });
-  document.addEventListener('visibilitychange', () => { if (active()) resume(); else { stop(); syncCat(); connection('Paused', ''); } });
-  window.addEventListener('pagehide', () => { stop(); catSprite.classList.remove('playing'); cat.removeAttribute('src'); });
+  document.addEventListener('visibilitychange', () => { if (active()) resume(); else { stop(); stopCat(); connection('Paused', ''); } });
+  window.addEventListener('pagehide', () => { stop(); stopCat(); });
   window.addEventListener('pageshow', event => { if (event.persisted) resume(); });
   // Fully Kiosk can report display power changes that do not hide its WebView.
   window.hudScreenOn = () => { screenOn = true; resume(); };
-  window.hudScreenOff = () => { screenOn = false; stop(); syncCat(); connection('Paused', ''); };
+  window.hudScreenOff = () => { screenOn = false; stop(); stopCat(); connection('Paused', ''); };
   try { if (window.fully?.bind) { window.fully.bind('screenOn', 'hudScreenOn()'); window.fully.bind('screenOff', 'hudScreenOff()'); } } catch {}
   $('date').textContent = new Date().toLocaleDateString([], { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase();
-  setDim(readSetting('hud-dim') === 'true'); modeLabel(); choose(selected); syncCat();
+  setDim(readSetting('hud-dim') === 'true'); modeLabel(); choose(selected); startCat();
 })();

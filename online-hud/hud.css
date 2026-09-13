@@ -16,33 +16,23 @@
 @media(orientation:landscape) and (max-height:600px){.reset strong{font-size:23px}}
 @media(max-width:600px) and (orientation:portrait){.reset>span{font-size:10px}.reset strong{font-size:34px;line-height:1.05}}
 
-/* The cat stays in its own strip below the usage scales and countdowns. */
-.cat-lane{--cat-size:clamp(75px,13svh,120px);--cat-width:calc(var(--cat-size) * 1.77778);height:var(--cat-size);position:relative;overflow:hidden;margin-top:10px;flex:none;pointer-events:none}
-.cat-sprite{position:absolute;left:0;bottom:0;width:var(--cat-width);height:var(--cat-size);opacity:0}
-.cat-sprite img{display:block;width:100%;height:100%;object-fit:contain}
-.cat-sprite.playing{opacity:1;animation:cat-stroll 32.5s linear infinite}
-@keyframes cat-stroll{0%{left:0;opacity:0}1%,30%{left:0;opacity:1}34.5%{left:0;opacity:1}64%{left:calc(100% - var(--cat-width));opacity:1}66.5%{left:0;opacity:1}97%{left:calc(100% - var(--cat-width));opacity:1}100%{left:calc(100% - var(--cat-width));opacity:0}}
-@media(max-width:600px) and (max-height:750px) and (orientation:portrait){.cat-lane{--cat-size:70px;margin-top:2px}}
-@media(orientation:landscape) and (max-height:600px){.cat-lane{--cat-size:50px;margin-top:1px}}
-@media(max-width:600px) and (orientation:portrait) and (min-height:751px){
-  .hud{gap:12px}.provider-row{margin-bottom:12px}.metrics{gap:16px}
-  .reading,.secondary .reading{margin:4px 0 8px}.metric-footer{margin-top:8px}
-  .scale-labels{margin-top:6px}.data-note{margin-top:10px}.cat-lane{margin-top:4px}
-}
-@media(max-width:600px) and (orientation:portrait) and (max-height:750px){
-  .hud{gap:4px}.provider-row{margin-bottom:4px}.metrics{gap:6px}
-  .metric{padding-top:6px}.reading,.secondary .reading{margin:2px 0 5px}
-  .number{font-size:76px}.secondary .number{font-size:62px}
-  .scale-labels{margin-top:5px}.metric-footer{margin-top:5px}
-  .cat-lane{--cat-size:60px;margin-top:0}
-}
-@media(orientation:landscape) and (max-height:600px){
-  .hud{gap:4px}.provider-row{margin-bottom:4px}.data-note{margin-top:4px}
-  .reading,.secondary .reading{margin:4px 0 8px}.metric-footer{margin-top:6px}
-  .cat-lane{--cat-size:42px;margin-top:0}
-}
-@media(min-width:601px) and (min-height:601px){
-  .hud{gap:16px}.provider-row{margin-bottom:20px}.reading{margin:10px 0}
-  .metric-footer{margin-top:14px}.scale-labels{margin-top:6px}
-  .data-note{margin-top:14px}.cat-lane{--cat-size:80px;margin-top:4px}
-}
+/* Overlay only: the original HUD measurements and card spacing stay untouched. */
+.hud{position:relative;z-index:1}
+.readout{text-shadow:0 0 5px #000,0 0 14px #000}
+.metric-footer,.data-note{background:rgba(0,0,0,.46)}
+.cat-overlay{--motion-height:min(63svh,540px);position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:.96;transition:opacity .22s ease}
+body.dim .cat-overlay{opacity:.52}
+.cat-overlay.changing,body.dim .cat-overlay.changing{opacity:0}
+.cat-overlay img,.cat-overlay video{position:absolute;display:block;width:auto;object-fit:contain;max-width:none;image-rendering:auto}
+.cat-overlay img{display:none}.cat-overlay video{display:none}
+.cat-overlay[data-phase=walk] video,.cat-overlay[data-phase=rest-motion] video{display:block;height:var(--motion-height);bottom:calc(var(--motion-height) * -.087)}
+.cat-overlay[data-phase=walk][data-side=left] video{left:calc(var(--motion-height) * -.55)}
+.cat-overlay[data-phase=walk][data-side=right] video{right:calc(var(--motion-height) * -.55);transform:scaleX(-1)}
+.cat-overlay[data-phase=rest-motion][data-side=left] video{left:calc(var(--motion-height) * -.28)}
+.cat-overlay[data-phase=rest-motion][data-side=right] video{right:calc(var(--motion-height) * -.28);transform:scaleX(-1)}
+.cat-overlay[data-phase=sit] img{display:block;height:calc(var(--motion-height) * .752);bottom:calc(var(--motion-height) * -.0185)}
+.cat-overlay[data-phase=sit][data-side=left] img{left:calc(var(--motion-height) * -.11)}
+.cat-overlay[data-phase=sit][data-side=right] img{right:calc(var(--motion-height) * -.11);transform:scaleX(-1)}
+.cat-overlay[data-phase=lie] img{display:block;height:calc(var(--motion-height) * .644);bottom:calc(var(--motion-height) * -.0185)}
+.cat-overlay[data-phase=lie][data-side=left] img{left:calc(var(--motion-height) * -.04)}
+.cat-overlay[data-phase=lie][data-side=right] img{right:calc(var(--motion-height) * -.04);transform:scaleX(-1)}
