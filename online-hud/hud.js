@@ -131,6 +131,14 @@
     lastScene = scene;
     playCat(scene);
   }
+  // The cat layers are intentionally non-intercepting so HUD controls remain
+  // usable. Hit-test its visible canvas at the document level instead.
+  window.addEventListener('pointerup', event => {
+    if (!catRunning || catOverlay.dataset.phase !== 'still' || event.button > 0) return;
+    if (event.target.closest?.('button, a')) return;
+    const rect = catStill.getBoundingClientRect();
+    if (rect.width && rect.height && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) nextEvent();
+  }, { passive: true });
   function startCat() {
     if (catRunning || !active()) return;
     catRunning = true;
