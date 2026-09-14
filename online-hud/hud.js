@@ -25,7 +25,13 @@
   if (location.search) history.replaceState(null, '', location.pathname + location.hash);
   const active = () => !document.hidden && screenOn;
   const randomBetween = (low, high) => low + Math.floor(Math.random() * (high - low + 1));
-  const restDuration = initial => (initial ? randomBetween(20, 80) : Math.random() < .28 ? randomBetween(240, 300) : randomBetween(45, 180)) * 1000;
+  // Keep the cat lively: it normally rests 12–40s, with occasional longer
+  // pauses so the display still feels natural rather than clockwork.
+  const restDuration = initial => (initial
+    ? randomBetween(8, 20)
+    : Math.random() < .05 ? randomBetween(150, 240)
+      : Math.random() < .18 ? randomBetween(75, 130)
+        : randomBetween(12, 40)) * 1000;
   function queueCat(next, delay) { clearTimeout(catTimer); catTimer = setTimeout(next, delay); }
   function drawStill(pose, image) {
     const height = Math.min(innerHeight * .4725, 405);
