@@ -17,7 +17,7 @@
     walk: '/cat-walk.webp?v=20260913-cat3',
     'walk-sit': '/cat-walk-sit.webp?v=20260913-cat3'
   };
-  let catTimer = null, catToken = 0;
+  let catTimer = null, catToken = 0, catMotionStarted = 0, catMotionFrame = 0;
   let catRunning = false, lastScene = null, catX = 0, facing = 'right', catPose = 'sit';
   const sceneBlobs = {};
   const stillImages = {};
@@ -93,14 +93,24 @@
     // The source footage moves about 119 pixels, so it needs no extra
     // element translation: the visible distance stays tied to the paws.
     const direction = walking
-      ? catX > catOverlay.parentElement.clientWidth * .38 ? 'left' : catX < -catOverlay.parentElement.clientWidth * .12 ? 'right' : Math.random() < .5 ? 'right' : 'left'
+      ? catX > catOverlay.parentElement.clientWidth * .62 ? 'left' : catX < catOverlay.parentElement.clientWidth * .2 ? 'right' : Math.random() < .5 ? 'right' : 'left'
       : facing;
     const startEdge = walking ? (direction === 'right' ? 0 : 272) : direction === 'right' ? 112 : 47;
     const endEdge = walking ? (direction === 'right' ? 118 : 153) : direction === 'right' ? 69 : 52;
     const baseX = catX - startEdge * unit;
+    const stillWidth = height * (walking ? .752 : .644) * (walking ? 216 / 203 : 362 / 174);
+    const maxStillX = Math.max(0, catOverlay.parentElement.clientWidth - stillWidth);
+    const travel = walking ? (direction === 'right' ? 1 : -1) * Math.min(110, catOverlay.parentElement.clientWidth * .28) : 0;
+    const advance = () => {
+      if (ticket !== catToken || !catRunning || !active()) return;
+      const progress = Math.min((performance.now() - catMotionStarted) / 7000, 1);
+      catMotion.style.left = `${baseX + travel * progress}px`;
+      if (progress < 1) catMotionFrame = requestAnimationFrame(advance);
+    };
     const finish = () => {
       if (ticket !== catToken) return;
-      catX = baseX + endEdge * unit;
+      cancelAnimationFrame(catMotionFrame);
+      catX = Math.max(0, Math.min(maxStillX, baseX + travel + endEdge * unit));
       facing = direction;
       showStill(walking ? 'sit' : 'lie', false, ticket);
     };
@@ -112,6 +122,8 @@
       if (ticket !== catToken || !catRunning || !active()) return;
       catMotion.style.visibility = 'visible';
       catOverlay.dataset.phase = 'motion';
+      catMotionStarted = performance.now();
+      advance();
       queueCat(finish, 10000);
     };
     if (!sceneBlobs[scene]) sceneBlobs[scene] = fetch(catAssets[scene], { credentials: 'same-origin' }).then(response => {
@@ -143,6 +155,7 @@
     if (catRunning || !active()) return;
     catRunning = true;
     catMotion.remove();
+    cancelAnimationFrame(catMotionFrame);
     catX = Math.round(Math.random() * Math.max(0, catOverlay.parentElement.clientWidth - 216 * Math.min(innerHeight * .4725, 405) / 270));
     facing = 'right';
     showStill('sit', true);

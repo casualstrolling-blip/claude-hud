@@ -50,12 +50,15 @@ const server = http.createServer((req, res) => {
     const topBefore = crypto.createHash('sha256').update(await page.screenshot({clip:{x:0,y:0,width:393,height:450}})).digest('hex');
     await page.waitForFunction(() => document.querySelector('#cat-overlay').dataset.phase === 'motion', {timeout:30000});
     await page.waitForTimeout(500);
+    const leftAtStart = await page.locator('#cat-motion').evaluate(el => el.getBoundingClientRect().left);
     const clip = {x:0,y:600,width:393,height:240};
     const atStart = crypto.createHash('sha256').update(await page.screenshot({clip})).digest('hex');
     await page.waitForTimeout(2600);
+    const leftMid = await page.locator('#cat-motion').evaluate(el => el.getBoundingClientRect().left);
     const mid = crypto.createHash('sha256').update(await page.screenshot({clip})).digest('hex');
     await page.screenshot({path: path.join(__dirname, 'cat-smaller-walking.png')});
     assert.notEqual(mid, atStart, 'the rendered cat frames should advance');
+    assert.ok(Math.abs(leftMid - leftAtStart) > 35, 'the cat should travel across the screen while walking');
     await page.waitForFunction(() => document.querySelector('#cat-overlay').dataset.phase === 'still', {timeout:15000});
     const after = await page.evaluate(() => ({
       cat: {left:Number(document.querySelector('#cat-still').dataset.catX),height:document.querySelector('#cat-still').getBoundingClientRect().height},
