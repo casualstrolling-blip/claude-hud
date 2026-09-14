@@ -213,8 +213,9 @@
       cache[current] = { data, at: Date.now() }; failures = 0;
       render(data); $('hud').classList.remove('stale'); $('sign-in').hidden = true;
       const hasData = ['sessionUtilization', 'weeklyUtilization'].some(key => typeof data[key] === 'number' && Number.isFinite(data[key]) && data[key] >= 0 && data[key] <= 1);
-      connection(hasData ? 'Connected' : 'No usage data', hasData ? 'ok' : 'error');
-      $('updated').textContent = hasData ? `Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Provider did not report usage';
+      const limited = data.rateLimited === true;
+      connection(limited ? 'Claude rate limited' : hasData ? 'Connected' : 'No usage data', hasData && !limited ? 'ok' : 'error');
+      $('updated').textContent = hasData && !limited ? `Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : limited ? 'Live reading unavailable · retrying' : 'Provider did not report usage';
     } catch (error) {
       if (ticket !== generation || !active()) return;
       failures++; $('hud').classList.add('stale');
