@@ -16,23 +16,14 @@
 @media(orientation:landscape) and (max-height:600px){.reset strong{font-size:23px}}
 @media(max-width:600px) and (orientation:portrait){.reset>span{font-size:10px}.reset strong{font-size:34px;line-height:1.05}}
 
-/* Overlay only: the original HUD measurements and card spacing stay untouched. */
-.hud{position:relative;z-index:1}
-.readout{text-shadow:0 0 5px #000,0 0 14px #000}
-.metric-footer,.data-note{background:rgba(0,0,0,.46)}
-.cat-overlay{--motion-height:min(63svh,540px);position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:.96;transition:opacity .22s ease}
-body.dim .cat-overlay{opacity:.52}
-.cat-overlay.changing,body.dim .cat-overlay.changing{opacity:0}
-.cat-overlay img,.cat-overlay video{position:absolute;display:block;width:auto;object-fit:contain;max-width:none;image-rendering:auto}
-.cat-overlay img{display:none}.cat-overlay video{display:none}
-.cat-overlay[data-phase=walk] video,.cat-overlay[data-phase=rest-motion] video{display:block;height:var(--motion-height);bottom:calc(var(--motion-height) * -.087)}
-.cat-overlay[data-phase=walk][data-side=left] video{left:calc(var(--motion-height) * -.55)}
-.cat-overlay[data-phase=walk][data-side=right] video{right:calc(var(--motion-height) * -.55);transform:scaleX(-1)}
-.cat-overlay[data-phase=rest-motion][data-side=left] video{left:calc(var(--motion-height) * -.28)}
-.cat-overlay[data-phase=rest-motion][data-side=right] video{right:calc(var(--motion-height) * -.28);transform:scaleX(-1)}
-.cat-overlay[data-phase=sit] img{display:block;height:calc(var(--motion-height) * .752);bottom:calc(var(--motion-height) * -.0185)}
-.cat-overlay[data-phase=sit][data-side=left] img{left:calc(var(--motion-height) * -.11)}
-.cat-overlay[data-phase=sit][data-side=right] img{right:calc(var(--motion-height) * -.11);transform:scaleX(-1)}
-.cat-overlay[data-phase=lie] img{display:block;height:calc(var(--motion-height) * .644);bottom:calc(var(--motion-height) * -.0185)}
-.cat-overlay[data-phase=lie][data-side=left] img{left:calc(var(--motion-height) * -.04)}
-.cat-overlay[data-phase=lie][data-side=right] img{right:calc(var(--motion-height) * -.04);transform:scaleX(-1)}
+/* The overlay does not participate in the original HUD layout or intercept its controls. */
+.hud{position:relative;z-index:1;isolation:isolate;overflow:clip}
+.cat-overlay{--motion-height:min(47.25svh,405px);display:contents}
+body.dim .cat-overlay[data-phase=still] #cat-still,body.dim .cat-overlay[data-phase=motion] #cat-motion{opacity:.52}
+#cat-still,#cat-motion{position:absolute;z-index:2;pointer-events:none;opacity:0;transition:opacity .42s ease}
+#cat-still{left:0;bottom:0;display:block}
+.cat-overlay[data-pose=sit] #cat-still{height:calc(var(--motion-height) * .752)}
+.cat-overlay[data-pose=lie] #cat-still{height:calc(var(--motion-height) * .644)}
+#cat-motion{display:block;width:auto;height:var(--motion-height);max-width:none;object-fit:contain;image-rendering:auto;bottom:calc(var(--motion-height) * -.087);visibility:hidden}
+.cat-overlay[data-phase=still] #cat-still{opacity:1}
+.cat-overlay[data-phase=motion] #cat-motion{opacity:1}

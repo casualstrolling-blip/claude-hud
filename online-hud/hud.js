@@ -13,78 +13,136 @@
   const catAssets = {
     sit: '/cat-sit.png?v=20260913-cat2',
     lie: '/cat-lie.png?v=20260913-cat2',
-    rest: '/cat-rest.mp4?v=20260913-cat2',
-    walk: '/cat-walk.mp4?v=20260913-cat2',
-    'walk-sit': '/cat-walk-sit.mp4?v=20260913-cat2'
+    rest: '/cat-rest.webp?v=20260913-cat3',
+    walk: '/cat-walk.webp?v=20260913-cat3',
+    'walk-sit': '/cat-walk-sit.webp?v=20260913-cat3'
   };
   let catTimer = null, catToken = 0;
-  let catRunning = false, lastScene = null, lastSide = 'left';
+  let catRunning = false, lastScene = null, catX = 0, facing = 'right', catPose = 'sit';
+  const sceneBlobs = {};
+  const stillImages = {};
+  let motionUrl = null;
   if (location.search) history.replaceState(null, '', location.pathname + location.hash);
   const active = () => !document.hidden && screenOn;
   const randomBetween = (low, high) => low + Math.floor(Math.random() * (high - low + 1));
   const restDuration = initial => (initial ? randomBetween(20, 80) : Math.random() < .28 ? randomBetween(240, 300) : randomBetween(45, 180)) * 1000;
   function queueCat(next, delay) { clearTimeout(catTimer); catTimer = setTimeout(next, delay); }
-  function restCat(side, pose = 'sit', initial = false) {
-    if (!catRunning || !active()) return;
-    clearTimeout(catTimer);
-    const ticket = ++catToken, source = catAssets[pose];
-    lastSide = side;
-    catOverlay.classList.add('changing');
+  function drawStill(pose, image) {
+    const height = Math.min(innerHeight * .4725, 405);
+    const drawnHeight = height * (pose === 'sit' ? .752 : .644);
+    const drawnWidth = drawnHeight * image.naturalWidth / image.naturalHeight;
+    const availableWidth = catOverlay.parentElement.clientWidth;
+    const visibleLeft = Math.max(0, catX);
+    const visibleRight = Math.min(availableWidth, catX + drawnWidth);
+    const visibleWidth = Math.max(1, visibleRight - visibleLeft);
+    const density = Math.min(devicePixelRatio || 1, 2.5);
+    catStill.style.left = `${visibleLeft}px`;
+    catStill.style.width = `${visibleWidth}px`;
+    catStill.width = Math.round(visibleWidth * density);
+    catStill.height = Math.round(drawnHeight * density);
+    const context = catStill.getContext('2d');
+    context.scale(density, density);
+    if (facing === 'left') {
+      context.translate(catX + drawnWidth - visibleLeft, 0);
+      context.scale(-1, 1);
+      context.drawImage(image, 0, height * .0185, drawnWidth, drawnHeight);
+    } else context.drawImage(image, catX - visibleLeft, height * .0185, drawnWidth, drawnHeight);
+    catStill.dataset.catX = String(catX);
+    catPose = pose;
+  }
+  function showStill(pose = 'sit', initial = false, ticket = catToken) {
+    if (ticket !== catToken || !catRunning || !active()) return;
+    const source = catAssets[pose];
     const ready = () => {
       if (ticket !== catToken || !catRunning || !active()) return;
-      catMotion.pause(); catMotion.removeAttribute('src'); catMotion.load();
-      catOverlay.dataset.phase = pose;
-      catOverlay.dataset.side = side;
-      requestAnimationFrame(() => { if (ticket === catToken) catOverlay.classList.remove('changing'); });
+      drawStill(pose, stillImage);
+      catOverlay.dataset.pose = pose;
+      catOverlay.dataset.phase = 'still';
+      // Keep the final motion frame visible until the still has faded in.
+      setTimeout(() => {
+        if (ticket !== catToken || catOverlay.dataset.phase !== 'still') return;
+        catMotion.style.visibility = 'hidden';
+        catMotion.removeAttribute('src');
+        if (motionUrl) URL.revokeObjectURL(motionUrl);
+        motionUrl = null;
+        catMotion.remove();
+      }, 500);
       queueCat(nextEvent, restDuration(initial));
     };
-    if (catStill.getAttribute('src') === source && catStill.complete && catStill.naturalWidth) setTimeout(ready, 160);
+    if (!stillImages[source]) { stillImages[source] = new Image(); stillImages[source].src = source; }
+    const stillImage = stillImages[source];
+    if (stillImage.complete && stillImage.naturalWidth) ready();
     else {
-      catStill.onload = () => setTimeout(ready, 160);
-      catStill.onerror = () => { if (ticket === catToken) { catOverlay.dataset.phase = 'off'; queueCat(nextEvent, 60000); } };
-      catStill.src = source;
+      stillImage.addEventListener('load', ready, { once: true });
+      stillImage.addEventListener('error', () => { if (ticket === catToken) queueCat(nextEvent, 60000); }, { once: true });
     }
   }
-  function playCat(scene, side) {
+  function playCat(scene) {
     if (!catRunning || !active()) return;
-    const ticket = ++catToken, pose = scene === 'rest' ? 'lie' : 'sit';
-    const phase = scene === 'rest' ? 'rest-motion' : 'walk';
-    catOverlay.classList.add('changing');
-    catMotion.pause();
-    catMotion.oncanplay = () => {
-      if (ticket !== catToken || !catRunning || !active()) return;
-      catMotion.oncanplay = null;
-      catOverlay.dataset.phase = phase;
-      catOverlay.dataset.side = side;
-      requestAnimationFrame(() => { if (ticket === catToken) catOverlay.classList.remove('changing'); });
-      catMotion.play().catch(() => { if (ticket === catToken) restCat(side, 'sit'); });
-      queueCat(() => restCat(side, pose), 15000);
+    clearTimeout(catTimer);
+    if (!catMotion.isConnected) catOverlay.append(catMotion);
+    const ticket = ++catToken, walking = scene !== 'rest';
+    const height = catMotion.getBoundingClientRect().height;
+    const unit = height / 270;
+    // The source footage moves about 119 pixels, so it needs no extra
+    // element translation: the visible distance stays tied to the paws.
+    const direction = walking
+      ? catX > catOverlay.parentElement.clientWidth * .38 ? 'left' : catX < -catOverlay.parentElement.clientWidth * .12 ? 'right' : Math.random() < .5 ? 'right' : 'left'
+      : facing;
+    const startEdge = walking ? (direction === 'right' ? 0 : 272) : direction === 'right' ? 112 : 47;
+    const endEdge = walking ? (direction === 'right' ? 118 : 153) : direction === 'right' ? 69 : 52;
+    const baseX = catX - startEdge * unit;
+    const finish = () => {
+      if (ticket !== catToken) return;
+      catX = baseX + endEdge * unit;
+      facing = direction;
+      showStill(walking ? 'sit' : 'lie', false, ticket);
     };
-    catMotion.onended = () => { if (ticket === catToken) restCat(side, pose); };
-    catMotion.onerror = () => { if (ticket === catToken) restCat(side, 'sit'); };
-    catMotion.src = catAssets[scene];
-    catMotion.load();
+    catMotion.style.left = `${baseX}px`;
+    catMotion.style.visibility = 'hidden';
+    catMotion.style.transform = direction === 'left' ? 'scaleX(-1)' : 'none';
+    catMotion.onerror = () => { if (ticket === catToken) showStill('sit', false, ticket); };
+    catMotion.onload = () => {
+      if (ticket !== catToken || !catRunning || !active()) return;
+      catMotion.style.visibility = 'visible';
+      catOverlay.dataset.phase = 'motion';
+      queueCat(finish, 10000);
+    };
+    if (!sceneBlobs[scene]) sceneBlobs[scene] = fetch(catAssets[scene], { credentials: 'same-origin' }).then(response => {
+      if (!response.ok) throw new Error('Cat animation unavailable');
+      return response.blob();
+    }).catch(error => { delete sceneBlobs[scene]; throw error; });
+    sceneBlobs[scene].then(blob => {
+      if (ticket !== catToken || !catRunning || !active()) return;
+      motionUrl = URL.createObjectURL(blob);
+      catMotion.src = motionUrl;
+    }).catch(() => { if (ticket === catToken) showStill('sit', false, ticket); });
   }
   function nextEvent() {
     if (!catRunning || !active()) return;
     const choices = ['rest', 'walk', 'walk-sit'].filter(scene => scene !== lastScene);
     const scene = choices[randomBetween(0, choices.length - 1)];
     lastScene = scene;
-    const side = Math.random() < .6 ? (lastSide === 'left' ? 'right' : 'left') : lastSide;
-    playCat(scene, side);
+    playCat(scene);
   }
   function startCat() {
     if (catRunning || !active()) return;
     catRunning = true;
-    restCat(Math.random() < .5 ? 'left' : 'right', 'sit', true);
+    catMotion.remove();
+    catX = Math.round(Math.random() * Math.max(0, catOverlay.parentElement.clientWidth - 216 * Math.min(innerHeight * .4725, 405) / 270));
+    facing = 'right';
+    showStill('sit', true);
   }
   function stopCat() {
     catRunning = false; ++catToken;
     clearTimeout(catTimer); catTimer = null;
-    catMotion.pause(); catMotion.removeAttribute('src'); catMotion.load();
-    catStill.removeAttribute('src');
+    catMotion.style.visibility = 'hidden';
+    catMotion.removeAttribute('src');
+    if (motionUrl) URL.revokeObjectURL(motionUrl);
+    motionUrl = null;
+    catMotion.remove();
+    catStill.getContext('2d').clearRect(0, 0, catStill.width, catStill.height);
     catOverlay.dataset.phase = 'off';
-    catOverlay.classList.remove('changing');
   }
   function resetTime(value) {
     if (value === null || value === undefined || value === '') return '—';
@@ -163,6 +221,12 @@
   $('dim').onclick = () => setDim(!document.body.classList.contains('dim'));
   document.querySelectorAll('[data-select]').forEach(button => button.onclick = () => { if (selected !== button.dataset.select) choose(button.dataset.select); });
   window.addEventListener('hashchange', () => { const next = location.hash.slice(1); if (next !== selected && providers[next]) choose(next); });
+  window.addEventListener('resize', () => {
+    if (catRunning && catOverlay.dataset.phase === 'still') {
+      const image = stillImages[catAssets[catPose]];
+      if (image?.naturalWidth) drawStill(catPose, image);
+    }
+  });
   document.addEventListener('visibilitychange', () => { if (active()) resume(); else { stop(); stopCat(); connection('Paused', ''); } });
   window.addEventListener('pagehide', () => { stop(); stopCat(); });
   window.addEventListener('pageshow', event => { if (event.persisted) resume(); });
