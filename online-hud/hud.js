@@ -100,7 +100,9 @@
     const baseX = catX - startEdge * unit;
     const stillWidth = height * (walking ? .752 : .644) * (walking ? 216 / 203 : 362 / 174);
     const maxStillX = Math.max(0, catOverlay.parentElement.clientWidth - stillWidth);
-    const travel = walking ? (direction === 'right' ? 1 : -1) * Math.min(110, catOverlay.parentElement.clientWidth * .28) : 0;
+    // The source clip has a short in-camera path; add a larger linear stage
+    // path so the body visibly crosses the HUD instead of walking in place.
+    const travel = walking ? (direction === 'right' ? 1 : -1) * Math.min(220, catOverlay.parentElement.clientWidth * .56) : 0;
     const advance = () => {
       if (ticket !== catToken || !catRunning || !active()) return;
       const progress = Math.min((performance.now() - catMotionStarted) / 7000, 1);
